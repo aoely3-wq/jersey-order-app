@@ -877,12 +877,13 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
                             Kelola
                           </button>
                           <Link
-                            href={`/invoice/${order.id}`}
+                            href={`/invoice/${order.id}?download=true`}
                             target="_blank"
-                            className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors"
-                            title="Buka Invoice PDF"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#002B5B] border border-blue-200 font-bold text-[11px] transition-colors"
+                            title="Download Bukti Bayar PDF"
                           >
-                            PDF
+                            <Download className="w-3 h-3 text-[#D4AF37]" />
+                            <span>PDF</span>
                           </Link>
                         </div>
                       </td>

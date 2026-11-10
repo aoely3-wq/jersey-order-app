@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shirt, PlusCircle, Search, ShieldCheck, Sparkles, Lock } from 'lucide-react';
+import { Shirt, PlusCircle, Search, ShieldCheck, Sparkles, Lock, FileText } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -47,17 +47,17 @@ export default function Navbar() {
             <span>Pesan Jersey</span>
           </Link>
 
-          {/* Menu Pemesan: Cek Status Pembayaran */}
+          {/* Menu Pemesan: Cek Status & Download Bukti Bayar PDF */}
           <Link
             href="/status"
             className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
-              pathname === '/status'
+              pathname === '/status' || pathname?.startsWith('/invoice')
                 ? 'bg-[#002B5B] text-white shadow-sm shadow-[#002B5B]/30'
                 : 'text-slate-600 hover:text-[#002B5B] hover:bg-slate-100'
             }`}
           >
-            <Search className="w-4 h-4" />
-            <span>Cek Status</span>
+            <FileText className="w-4 h-4 text-[#D4AF37]" />
+            <span>Cek Status &amp; Unduh PDF</span>
           </Link>
 
           {/* Menu Khusus Admin (Diberi Gembok) */}

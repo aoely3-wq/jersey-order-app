@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   Printer,
+  Download,
   CheckCircle2,
   Share2,
   ArrowLeft,
@@ -22,11 +23,22 @@ import { getWhatsAppDirectLink } from '@/lib/whatsapp';
 
 function InvoiceContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const orderId = params?.id as string;
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Auto-trigger dialog download/print jika ada parameter ?download=true
+  useEffect(() => {
+    if (order && (searchParams.get('download') === 'true' || searchParams.get('print') === 'true')) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [order, searchParams]);
 
   useEffect(() => {
     if (!orderId) return;
@@ -151,7 +163,7 @@ function InvoiceContent() {
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
             >
               <Share2 className="w-3.5 h-3.5" />
               <span>Bagikan ke WA</span>
@@ -160,10 +172,19 @@ function InvoiceContent() {
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-black transition-all shadow-md shadow-blue-950/20 hover:scale-105 active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#002B5B] hover:bg-[#001D3D] text-white text-xs font-black transition-all shadow-md shadow-blue-950/25 hover:scale-105 active:scale-95 cursor-pointer"
             >
-              <Printer className="w-4 h-4 text-amber-300" />
-              <span>Cetak / Download PDF</span>
+              <Download className="w-4 h-4 text-[#D4AF37]" />
+              <span>Download PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-300 cursor-pointer hidden sm:inline-flex"
+            >
+              <Printer className="w-4 h-4 text-slate-600" />
+              <span>Cetak</span>
             </button>
           </div>
         </div>

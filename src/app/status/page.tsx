@@ -16,6 +16,7 @@ import {
   Sparkles,
   ChevronRight,
   FileText,
+  Download,
 } from 'lucide-react';
 import { Order, formatRupiah } from '@/lib/types';
 import QrisPaymentModal from '@/components/QrisPaymentModal';
@@ -82,11 +83,11 @@ export default function StatusPage() {
             <Search className="w-3.5 h-3.5 text-blue-700" />
             <span>Layanan Mandiri Pemesan</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-blue-950 tracking-tight">
-            Cek &amp; Monitor Status Pembayaran
+          <h1 className="text-2xl sm:text-3xl font-black text-[#002B5B] tracking-tight">
+            Cek Status &amp; Download Bukti Bayar PDF
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto">
-            Masukkan <b>Nomor WhatsApp</b> atau <b>ID Pesanan</b> Anda untuk mengecek status pesanan atau melanjutkan pembayaran via QRIS / Virtual Account.
+            Masukkan <b>Nomor WhatsApp</b> atau <b>ID Pesanan</b> Anda untuk mengecek status pesanan, mengunduh bukti faktur pembayaran resmi (PDF), atau melanjutkan transaksi via QRIS / Virtual Account.
           </p>
         </div>
 
@@ -250,13 +251,15 @@ export default function StatusPage() {
                             </button>
                           ) : (
                             <>
-                              <Link
-                                href={`/invoice/${order.id}`}
-                                className="inline-flex items-center justify-center gap-1.5 bg-blue-900 hover:bg-blue-950 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-xs"
+                              <a
+                                href={`/invoice/${order.id}?download=true`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-1.5 bg-[#002B5B] hover:bg-[#001D3D] text-white font-black py-2.5 px-3.5 rounded-xl text-xs transition-all shadow-md shadow-blue-950/20 hover:scale-[1.02] active:scale-[0.98]"
                               >
-                                <FileText className="w-3.5 h-3.5 text-amber-300" />
-                                <span>Cetak Invoice PDF</span>
-                              </Link>
+                                <Download className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                <span>Download Bukti PDF</span>
+                              </a>
                               <button
                                 type="button"
                                 onClick={() => setActiveModalOrder(order)}

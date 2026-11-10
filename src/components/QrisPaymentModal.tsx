@@ -733,15 +733,15 @@ export default function QrisPaymentModal({
                 </div>
               </div>
 
-              {/* Tombol Cetak PDF Bukti Pembayaran */}
+              {/* Tombol Download & Cetak PDF Bukti Pembayaran */}
               <a
-                href={`/invoice/${currentOrder.id}`}
+                href={`/invoice/${currentOrder.id}?download=true`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-950 to-blue-900 hover:from-blue-900 hover:to-indigo-950 text-white font-extrabold py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-md shadow-blue-950/20 hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#002B5B] via-[#003875] to-[#001D3D] hover:from-[#001D3D] hover:to-[#002B5B] text-white font-extrabold py-3.5 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-md shadow-blue-950/25 hover:scale-[1.01] active:scale-[0.99]"
               >
-                <Printer className="w-4 h-4 text-amber-300" />
-                <span>Buka &amp; Cetak Bukti Pembayaran PDF Resmi</span>
+                <Download className="w-4 h-4 text-[#D4AF37]" />
+                <span>Download Bukti Bayar PDF Resmi</span>
                 <ExternalLink className="w-3.5 h-3.5 opacity-80" />
               </a>
 
