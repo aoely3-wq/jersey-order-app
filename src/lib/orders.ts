@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Order, OrderStatus, calculatePrice, JerseySize, SleeveType } from './types';
+import { Order, OrderStatus, calculatePrice, JerseySize, SleeveType, GenderCut } from './types';
 import {
   isGoogleSheetConfigured,
   fetchOrdersFromSheet,
@@ -21,42 +21,48 @@ function ensureDataFile() {
       const initialOrders: Order[] = [
         {
           id: 'ORD-1001',
-          name: 'Budi Santoso (IT Support)',
+          name: 'Budi Santoso',
+          division: 'Bagian Umum',
+          genderCut: 'men',
           phone: '081234567890',
           size: 'L',
           sleeve: 'pendek',
-          basePrice: 100000,
+          basePrice: 130000,
           sleeveExtra: 0,
           sizeExtra: 0,
-          totalPrice: 100000,
+          totalPrice: 130000,
           status: 'PAID',
           createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
           paidAt: new Date(Date.now() - 3600000 * 4).toISOString(),
         },
         {
           id: 'ORD-1002',
-          name: 'Siti Rahma (Finance)',
+          name: 'Siti Rahma',
+          division: 'Bidang PPA 1',
+          genderCut: 'ladies',
           phone: '085711223344',
           size: 'M',
           sleeve: 'panjang',
-          basePrice: 100000,
-          sleeveExtra: 20000,
+          basePrice: 130000,
+          sleeveExtra: 10000,
           sizeExtra: 0,
-          totalPrice: 120000,
+          totalPrice: 140000,
           status: 'PAID',
           createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
           paidAt: new Date(Date.now() - 3600000 * 2).toISOString(),
         },
         {
           id: 'ORD-1003',
-          name: 'Agus Pratama (Operasional)',
+          name: 'Agus Pratama',
+          division: 'Bidang SKKI',
+          genderCut: 'men',
           phone: '081987654321',
           size: 'XXL',
           sleeve: 'panjang',
-          basePrice: 100000,
-          sleeveExtra: 20000,
-          sizeExtra: 10000,
-          totalPrice: 130000,
+          basePrice: 130000,
+          sleeveExtra: 10000,
+          sizeExtra: 0,
+          totalPrice: 140000,
           status: 'PENDING',
           createdAt: new Date(Date.now() - 1800000).toISOString(),
         },
@@ -103,6 +109,8 @@ export async function getOrderById(id: string): Promise<Order | null> {
 
 export interface CreateOrderParams {
   name: string;
+  division: string;
+  genderCut: GenderCut;
   phone: string;
   size: JerseySize;
   sleeve: SleeveType;
@@ -117,6 +125,8 @@ export async function createOrder(params: CreateOrderParams): Promise<Order> {
   const newOrder: Order = {
     id: newId,
     name: params.name.trim(),
+    division: params.division?.trim() || 'Bagian Umum',
+    genderCut: params.genderCut || 'men',
     phone: params.phone.trim(),
     size: params.size,
     sleeve: params.sleeve,

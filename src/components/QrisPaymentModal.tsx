@@ -116,7 +116,7 @@ export default function QrisPaymentModal({
   };
 
   const copyInvoice = () => {
-    const text = `Halo, saya sudah memesan jersey!\nNo Order: ${currentOrder.id}\nNama: ${currentOrder.name}\nUkuran: ${currentOrder.size}\nLengan: ${currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'}\nTotal: ${formatRupiah(currentOrder.totalPrice)}\nStatus: ${currentOrder.status === 'PAID' ? 'LUNAS' : 'Menunggu Bayar'}`;
+    const text = `Halo, saya sudah memesan jersey!\nNo Order: ${currentOrder.id}\nNama: ${currentOrder.name}\nBidang/Bagian: ${currentOrder.division || 'Bagian Umum'}\nModel: ${currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'}\nUkuran: ${currentOrder.size}\nLengan: ${currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'}\nTotal: ${formatRupiah(currentOrder.totalPrice)}\nStatus: ${currentOrder.status === 'PAID' ? 'LUNAS' : 'Menunggu Bayar'}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -212,7 +212,7 @@ export default function QrisPaymentModal({
                   NMID: {QRIS_NMID} &bull; A01
                 </p>
                 <p className="text-[11px] font-medium text-slate-600 mt-0.5">
-                  Jersey Cual DJPb Babel &bull; {currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'} (Size {currentOrder.size})
+                  {currentOrder.division || 'Bagian Umum'} &bull; {currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} &bull; Size {currentOrder.size} ({currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})
                 </p>
               </div>
 
@@ -421,13 +421,17 @@ export default function QrisPaymentModal({
                   <span className="font-semibold text-slate-800">{currentOrder.name}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
+                  <span className="text-slate-500 text-xs">Bidang / Bagian</span>
+                  <span className="font-semibold text-blue-900">{currentOrder.division || 'Bagian Umum'}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-200">
                   <span className="text-slate-500 text-xs">Nomor WhatsApp</span>
                   <span className="font-mono text-slate-800">{currentOrder.phone}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="text-slate-500 text-xs">Pilihan Jersey</span>
+                  <span className="text-slate-500 text-xs">Model & Ukuran</span>
                   <span className="font-medium text-slate-800">
-                    {currentOrder.size} - {currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'}
+                    {currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} &bull; {currentOrder.size} ({currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">

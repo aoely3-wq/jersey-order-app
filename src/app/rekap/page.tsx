@@ -18,8 +18,10 @@ import {
   PlusCircle,
   MessageCircle,
   ExternalLink,
+  Filter,
+  Building2,
 } from 'lucide-react';
-import { Order, JerseySize, formatRupiah } from '@/lib/types';
+import { Order, JerseySize, DIVISIONS, formatRupiah } from '@/lib/types';
 import { getWhatsAppDirectLink } from '@/lib/whatsapp';
 import QrisPaymentModal from '@/components/QrisPaymentModal';
 
@@ -28,6 +30,8 @@ export default function RekapPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
+  const [divisionFilter, setDivisionFilter] = useState<string>('ALL');
+  const [cutFilter, setCutFilter] = useState<'ALL' | 'men' | 'ladies'>('ALL');
   const [copiedVendor, setCopiedVendor] = useState(false);
   const [activeModalOrder, setActiveModalOrder] = useState<Order | null>(null);
   const [sheetConfigured, setSheetConfigured] = useState(false);
@@ -79,14 +83,21 @@ export default function RekapPage() {
       const matchSearch =
         order.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.phone.includes(searchTerm) ||
-        order.id.toLowerCase().includes(searchTerm.toLowerCase());
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.division && order.division.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchStatus =
         statusFilter === 'ALL' ? true : order.status === statusFilter;
 
-      return matchSearch && matchStatus;
+      const matchDivision =
+        divisionFilter === 'ALL' ? true : (order.division || 'Bagian Umum') === divisionFilter;
+
+      const matchCut =
+        cutFilter === 'ALL' ? true : (order.genderCut || 'men') === cutFilter;
+
+      return matchSearch && matchStatus && matchDivision && matchCut;
     });
-  }, [orders, searchTerm, statusFilter]);
+  }, [orders, searchTerm, statusFilter, divisionFilter, cutFilter]);
 
   // Summary Metrics
   const metrics = useMemo(() => {
@@ -105,68 +116,90 @@ export default function RekapPage() {
     };
   }, [orders]);
 
-  // Rekap Matrix for Vendor Konveksi
+  // Rekap Matrix for Vendor Konveksi (Men vs Ladies & Pendek vs Panjang)
   const sizeMatrix = useMemo(() => {
-    const allSizes: JerseySize[] = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
-    const matrix: Record<'pendek' | 'panjang', Record<JerseySize, number>> = {
-      pendek: { S: 0, M: 0, L: 0, XL: 0, XXL: 0, '3XL': 0, '4XL': 0 },
-      panjang: { S: 0, M: 0, L: 0, XL: 0, XXL: 0, '3XL': 0, '4XL': 0 },
-    };
+    const allSizes: JerseySize[] = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
+    type MatrixRow = Record<JerseySize, number>;
+    const initRow = (): MatrixRow => ({
+      S: 0, M: 0, L: 0, XL: 0, XXL: 0, XXXL: 0, XS: 0, '4XL': 0
+    });
+
+    const menPendek = initRow();
+    const menPanjang = initRow();
+    const ladiesPendek = initRow();
+    const ladiesPanjang = initRow();
 
     orders.forEach((o) => {
-      if (matrix[o.sleeve] && matrix[o.sleeve][o.size] !== undefined) {
-        matrix[o.sleeve][o.size]++;
+      const isLadies = o.genderCut === 'ladies';
+      const isPanjang = o.sleeve === 'panjang';
+      const sizeKey = ((o.size as string) === '3XL' ? 'XXXL' : o.size) as JerseySize;
+
+      if (isLadies) {
+        if (isPanjang) ladiesPanjang[sizeKey] = (ladiesPanjang[sizeKey] || 0) + 1;
+        else ladiesPendek[sizeKey] = (ladiesPendek[sizeKey] || 0) + 1;
+      } else {
+        if (isPanjang) menPanjang[sizeKey] = (menPanjang[sizeKey] || 0) + 1;
+        else menPendek[sizeKey] = (menPendek[sizeKey] || 0) + 1;
       }
     });
 
     const totalPerSize: Record<JerseySize, number> = {
-      S: matrix.pendek.S + matrix.panjang.S,
-      M: matrix.pendek.M + matrix.panjang.M,
-      L: matrix.pendek.L + matrix.panjang.L,
-      XL: matrix.pendek.XL + matrix.panjang.XL,
-      XXL: matrix.pendek.XXL + matrix.panjang.XXL,
-      '3XL': matrix.pendek['3XL'] + matrix.panjang['3XL'],
-      '4XL': matrix.pendek['4XL'] + matrix.panjang['4XL'],
+      S: (menPendek.S || 0) + (menPanjang.S || 0) + (ladiesPendek.S || 0) + (ladiesPanjang.S || 0),
+      M: (menPendek.M || 0) + (menPanjang.M || 0) + (ladiesPendek.M || 0) + (ladiesPanjang.M || 0),
+      L: (menPendek.L || 0) + (menPanjang.L || 0) + (ladiesPendek.L || 0) + (ladiesPanjang.L || 0),
+      XL: (menPendek.XL || 0) + (menPanjang.XL || 0) + (ladiesPendek.XL || 0) + (ladiesPanjang.XL || 0),
+      XXL: (menPendek.XXL || 0) + (menPanjang.XXL || 0) + (ladiesPendek.XXL || 0) + (ladiesPanjang.XXL || 0),
+      XXXL: (menPendek.XXXL || 0) + (menPanjang.XXXL || 0) + (ladiesPendek.XXXL || 0) + (ladiesPanjang.XXXL || 0),
+      XS: 0,
+      '4XL': 0,
     };
 
-    const totalPendek = Object.values(matrix.pendek).reduce((a, b) => a + b, 0);
-    const totalPanjang = Object.values(matrix.panjang).reduce((a, b) => a + b, 0);
+    const sumRow = (r: MatrixRow) => allSizes.reduce((sum, s) => sum + (r[s] || 0), 0);
+
+    const totalMenPendek = sumRow(menPendek);
+    const totalMenPanjang = sumRow(menPanjang);
+    const totalLadiesPendek = sumRow(ladiesPendek);
+    const totalLadiesPanjang = sumRow(ladiesPanjang);
 
     return {
       allSizes,
-      matrix,
+      menPendek,
+      menPanjang,
+      ladiesPendek,
+      ladiesPanjang,
       totalPerSize,
-      totalPendek,
-      totalPanjang,
-      grandTotal: totalPendek + totalPanjang,
+      totalMenPendek,
+      totalMenPanjang,
+      totalLadiesPendek,
+      totalLadiesPanjang,
+      grandTotal: totalMenPendek + totalMenPanjang + totalLadiesPendek + totalLadiesPanjang,
     };
   }, [orders]);
 
   // Copy vendor summary to clipboard
   const handleCopyVendorSummary = () => {
-    const text = `*REKAP PESANAN JERSEY KANTOR UNTUK VENDOR*
+    const text = `*REKAP PESANAN JERSEY KANTOR UNTUK VENDOR KONVEKSI*
 Total Keseluruhan: ${sizeMatrix.grandTotal} Pcs
 (Lunas: ${metrics.paidCount} pcs | Menunggu: ${metrics.pendingCount} pcs)
 
-👕 *LENGAN PENDEK (Total: ${sizeMatrix.totalPendek} Pcs):*
-- S: ${sizeMatrix.matrix.pendek.S} pcs
-- M: ${sizeMatrix.matrix.pendek.M} pcs
-- L: ${sizeMatrix.matrix.pendek.L} pcs
-- XL: ${sizeMatrix.matrix.pendek.XL} pcs
-- XXL: ${sizeMatrix.matrix.pendek.XXL} pcs
-- 3XL: ${sizeMatrix.matrix.pendek['3XL']} pcs
-- 4XL: ${sizeMatrix.matrix.pendek['4XL']} pcs
+📋 *DETAIL POTONGAN:*
 
-👕 *LENGAN PANJANG (Total: ${sizeMatrix.totalPanjang} Pcs):*
-- S: ${sizeMatrix.matrix.panjang.S} pcs
-- M: ${sizeMatrix.matrix.panjang.M} pcs
-- L: ${sizeMatrix.matrix.panjang.L} pcs
-- XL: ${sizeMatrix.matrix.panjang.XL} pcs
-- XXL: ${sizeMatrix.matrix.panjang.XXL} pcs
-- 3XL: ${sizeMatrix.matrix.panjang['3XL']} pcs
-- 4XL: ${sizeMatrix.matrix.panjang['4XL']} pcs
+*1. SIZE REGULER (MEN)*
+• Lengan Pendek: ${sizeMatrix.totalMenPendek} pcs
+  - S: ${sizeMatrix.menPendek.S} | M: ${sizeMatrix.menPendek.M} | L: ${sizeMatrix.menPendek.L} | XL: ${sizeMatrix.menPendek.XL} | 2XL: ${sizeMatrix.menPendek.XXL} | 3XL: ${sizeMatrix.menPendek.XXXL}
+• Lengan Panjang: ${sizeMatrix.totalMenPanjang} pcs
+  - S: ${sizeMatrix.menPanjang.S} | M: ${sizeMatrix.menPanjang.M} | L: ${sizeMatrix.menPanjang.L} | XL: ${sizeMatrix.menPanjang.XL} | 2XL: ${sizeMatrix.menPanjang.XXL} | 3XL: ${sizeMatrix.menPanjang.XXXL}
 
-_Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' })}_`;
+*2. SIZE LADIES*
+• Lengan Pendek: ${sizeMatrix.totalLadiesPendek} pcs
+  - S: ${sizeMatrix.ladiesPendek.S} | M: ${sizeMatrix.ladiesPendek.M} | L: ${sizeMatrix.ladiesPendek.L} | XL: ${sizeMatrix.ladiesPendek.XL} | 2XL: ${sizeMatrix.ladiesPendek.XXL} | 3XL: ${sizeMatrix.ladiesPendek.XXXL}
+• Lengan Panjang: ${sizeMatrix.totalLadiesPanjang} pcs
+  - S: ${sizeMatrix.ladiesPanjang.S} | M: ${sizeMatrix.ladiesPanjang.M} | L: ${sizeMatrix.ladiesPanjang.L} | XL: ${sizeMatrix.ladiesPanjang.XL} | 2XL: ${sizeMatrix.ladiesPanjang.XXL} | 3XL: ${sizeMatrix.ladiesPanjang.XXXL}
+
+*TOTAL PER UKURAN:*
+S: ${sizeMatrix.totalPerSize.S} | M: ${sizeMatrix.totalPerSize.M} | L: ${sizeMatrix.totalPerSize.L} | XL: ${sizeMatrix.totalPerSize.XL} | 2XL: ${sizeMatrix.totalPerSize.XXL} | 3XL: ${sizeMatrix.totalPerSize.XXXL}
+*GRAND TOTAL: ${sizeMatrix.grandTotal} PCS*`;
 
     navigator.clipboard.writeText(text);
     setCopiedVendor(true);
@@ -175,30 +208,48 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
 
   // Export CSV
   const handleExportCSV = () => {
-    const headers = ['ID Pesanan', 'Nama', 'Nomor WA', 'Ukuran', 'Lengan', 'Total Harga', 'Status', 'Waktu Order', 'Catatan'];
+    const headers = [
+      'ID Pesanan',
+      'Nama Pemesan',
+      'Bidang / Bagian',
+      'Model Potongan',
+      'Nomor WA',
+      'Ukuran',
+      'Tipe Lengan',
+      'Total Harga',
+      'Status',
+      'Waktu Pesan',
+      'Waktu Lunas',
+      'Catatan',
+    ];
     const rows = orders.map((o) => [
       `"${o.id}"`,
       `"${o.name}"`,
+      `"${o.division || 'Bagian Umum'}"`,
+      `"${o.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'}"`,
       `"'${o.phone}"`,
       `"${o.size}"`,
-      `"${o.sleeve}"`,
+      `"${o.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'}"`,
       o.totalPrice,
       `"${o.status}"`,
-      `"${new Date(o.createdAt).toLocaleString('id-ID')}"`,
+      `"${o.createdAt ? new Date(o.createdAt).toLocaleString('id-ID') : ''}"`,
+      `"${o.paidAt ? new Date(o.paidAt).toLocaleString('id-ID') : ''}"`,
       `"${o.notes || ''}"`,
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csvContent =
+      'data:text/csv;charset=utf-8,\uFEFF' +
+      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `rekap_jersey_kantor_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `rekap_jersey_nawasena_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Toggle order status (e.g. manually mark paid for cash)
+  // Toggle order status
   const handleToggleStatus = async (order: Order) => {
     const nextStatus = order.status === 'PAID' ? 'PENDING' : 'PAID';
     try {
@@ -218,7 +269,10 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
 
   // Delete order
   const handleDeleteOrder = async (id: string, name: string) => {
-    if (!confirm(`Hapus pesanan atas nama "${name}"?`)) return;
+    if (!confirm(`Hapus pesanan atas nama "${name}"? Data di database akan ikut terhapus.`)) {
+      return;
+    }
+
     try {
       const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -244,19 +298,19 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
             </span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Pantau status pembayaran pegawai Kanwil DJPb Kepulauan Bangka Belitung, kirim notifikasi WhatsApp, dan rekap otomatis ukuran untuk vendor konveksi.
+            Pantau status pembayaran per bidang/bagian Kanwil DJPb Babel, dan rekap otomatis ukuran untuk vendor konveksi.
           </p>
 
           <div className="flex flex-wrap items-center gap-2 mt-3">
             {sheetConfigured ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Database: Google Sheets (Online & Terkoneksi)
+                Database: Google Sheets (Online &amp; Terkoneksi)
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
                 <span className="w-2 h-2 rounded-full bg-slate-400" />
-                Database: File Lokal JSON (Belum terhubung ke Google Sheets)
+                Database: File Lokal JSON
               </span>
             )}
 
@@ -319,7 +373,7 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
           <div className="text-2xl font-black text-emerald-600">
             {formatRupiah(metrics.totalRevenuePaid)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">Terkonfirmasi via QRIS / Tunai</div>
+          <div className="text-xs text-slate-500 mt-1">Terkonfirmasi via QRIS DANA / BRI</div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
@@ -354,7 +408,7 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
               <span>Rekap Ukuran untuk Vendor Konveksi</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Rincian jumlah potong per ukuran & jenis lengan untuk diserahkan ke pihak penjahit/vendor.
+              Rincian potongan <b>Reguler (Men)</b> &amp; <b>Ladies</b> (Lengan Pendek &amp; Panjang) sesuai gambar panduan ukuran vendor.
             </p>
           </div>
 
@@ -381,44 +435,81 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
           <table className="w-full text-left text-xs sm:text-sm border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold">
-                <th className="py-3 px-4 rounded-l-xl">Tipe Lengan</th>
+                <th className="py-3 px-4 rounded-l-xl">Kategori &amp; Tipe Lengan</th>
                 {sizeMatrix.allSizes.map((s) => (
                   <th key={s} className="py-3 px-3 text-center">
                     {s}
                   </th>
                 ))}
                 <th className="py-3 px-4 text-center rounded-r-xl bg-blue-50 text-blue-900">
-                  Subtotal Pcs
+                  Subtotal
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {/* 1. Men Pendek */}
               <tr>
-                <td className="py-3 px-4 font-semibold text-slate-800">Lengan Pendek (Rp 100k)</td>
+                <td className="py-3 px-4 font-semibold text-slate-800">
+                  Reguler (Men) - Lengan Pendek
+                </td>
                 {sizeMatrix.allSizes.map((s) => (
                   <td key={s} className="py-3 px-3 text-center font-mono font-medium text-slate-700">
-                    {sizeMatrix.matrix.pendek[s] || '-'}
+                    {sizeMatrix.menPendek[s] || '-'}
                   </td>
                 ))}
                 <td className="py-3 px-4 text-center font-bold text-blue-700 bg-blue-50/50">
-                  {sizeMatrix.totalPendek} pcs
+                  {sizeMatrix.totalMenPendek} pcs
                 </td>
               </tr>
+
+              {/* 2. Men Panjang */}
               <tr>
-                <td className="py-3 px-4 font-semibold text-slate-800">Lengan Panjang (Rp 120k)</td>
+                <td className="py-3 px-4 font-semibold text-slate-800">
+                  Reguler (Men) - Lengan Panjang
+                </td>
                 {sizeMatrix.allSizes.map((s) => (
                   <td key={s} className="py-3 px-3 text-center font-mono font-medium text-slate-700">
-                    {sizeMatrix.matrix.panjang[s] || '-'}
+                    {sizeMatrix.menPanjang[s] || '-'}
                   </td>
                 ))}
                 <td className="py-3 px-4 text-center font-bold text-blue-700 bg-blue-50/50">
-                  {sizeMatrix.totalPanjang} pcs
+                  {sizeMatrix.totalMenPanjang} pcs
+                </td>
+              </tr>
+
+              {/* 3. Ladies Pendek */}
+              <tr className="bg-rose-50/20">
+                <td className="py-3 px-4 font-semibold text-rose-950">
+                  Ladies - Lengan Pendek
+                </td>
+                {sizeMatrix.allSizes.map((s) => (
+                  <td key={s} className="py-3 px-3 text-center font-mono font-medium text-slate-700">
+                    {sizeMatrix.ladiesPendek[s] || '-'}
+                  </td>
+                ))}
+                <td className="py-3 px-4 text-center font-bold text-rose-800 bg-rose-50/50">
+                  {sizeMatrix.totalLadiesPendek} pcs
+                </td>
+              </tr>
+
+              {/* 4. Ladies Panjang */}
+              <tr className="bg-rose-50/20">
+                <td className="py-3 px-4 font-semibold text-rose-950">
+                  Ladies - Lengan Panjang
+                </td>
+                {sizeMatrix.allSizes.map((s) => (
+                  <td key={s} className="py-3 px-3 text-center font-mono font-medium text-slate-700">
+                    {sizeMatrix.ladiesPanjang[s] || '-'}
+                  </td>
+                ))}
+                <td className="py-3 px-4 text-center font-bold text-rose-800 bg-rose-50/50">
+                  {sizeMatrix.totalLadiesPanjang} pcs
                 </td>
               </tr>
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-slate-200 font-bold bg-slate-50/80">
-                <td className="py-3 px-4 text-slate-900">Total Semua</td>
+              <tr className="border-t-2 border-slate-200 font-bold bg-slate-50/90">
+                <td className="py-3 px-4 text-slate-900">Total Semua Ukuran</td>
                 {sizeMatrix.allSizes.map((s) => (
                   <td key={s} className="py-3 px-3 text-center font-mono font-bold text-slate-900">
                     {sizeMatrix.totalPerSize[s]}
@@ -433,52 +524,83 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
         </div>
       </div>
 
-      {/* DETAIL PESANAN KAWAN KANTOR */}
+      {/* FILTER & DATA TABLE SECTION */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Search & Filters */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-slate-50/50">
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        {/* Table Filters Bar */}
+        <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Cari nama, nomor WA, atau ID pesanan..."
+              placeholder="Cari nama, bidang, WA, atau order ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 focus:border-transparent"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 self-start sm:self-auto">
-            <button
-              onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                statusFilter === 'ALL'
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filter Bidang / Bagian */}
+            <div className="flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-slate-500" />
+              <select
+                value={divisionFilter}
+                onChange={(e) => setDivisionFilter(e.target.value)}
+                className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer"
+              >
+                <option value="ALL">Semua Bidang ({orders.length})</option>
+                {DIVISIONS.map((div) => (
+                  <option key={div} value={div}>
+                    {div}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter Model Potongan */}
+            <select
+              value={cutFilter}
+              onChange={(e) => setCutFilter(e.target.value as any)}
+              className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer"
             >
-              Semua ({orders.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter('PAID')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                statusFilter === 'PAID'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              Lunas ({metrics.paidCount})
-            </button>
-            <button
-              onClick={() => setStatusFilter('PENDING')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                statusFilter === 'PENDING'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              Belum Bayar ({metrics.pendingCount})
-            </button>
+              <option value="ALL">Semua Model</option>
+              <option value="men">Reguler Men</option>
+              <option value="ladies">Ladies</option>
+            </select>
+
+            {/* Status Tabs */}
+            <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+              <button
+                onClick={() => setStatusFilter('ALL')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  statusFilter === 'ALL'
+                    ? 'bg-blue-900 text-white'
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                Semua
+              </button>
+              <button
+                onClick={() => setStatusFilter('PAID')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  statusFilter === 'PAID'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                Lunas ({metrics.paidCount})
+              </button>
+              <button
+                onClick={() => setStatusFilter('PENDING')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  statusFilter === 'PENDING'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                Belum ({metrics.pendingCount})
+              </button>
+            </div>
           </div>
         </div>
 
@@ -487,11 +609,11 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase tracking-wider text-[11px] font-bold">
               <tr>
-                <th className="py-3 px-4">Nama & Kontak</th>
-                <th className="py-3 px-3">Ukuran & Lengan</th>
+                <th className="py-3 px-4">Nama &amp; Bidang / Bagian</th>
+                <th className="py-3 px-3">Model &amp; Ukuran</th>
                 <th className="py-3 px-3">Total Biaya</th>
                 <th className="py-3 px-3 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Aksi & Notifikasi WA</th>
+                <th className="py-3 px-4 text-right">Aksi &amp; Notifikasi WA</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -508,28 +630,37 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
 
                   return (
                     <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                      {/* Nama & Kontak */}
+                      {/* Nama & Bidang */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900">{order.name}</div>
-                        <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5 font-mono">
-                          <span>{order.phone}</span>
+                        <div className="font-bold text-slate-900 text-sm">{order.name}</div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-900 border border-blue-200">
+                            {order.division || 'Bagian Umum'}
+                          </span>
                           <span className="text-slate-300">&bull;</span>
-                          <span className="text-[11px] text-slate-400">{order.id}</span>
+                          <span className="text-xs text-slate-500 font-mono">{order.phone}</span>
+                          <span className="text-slate-300">&bull;</span>
+                          <span className="text-[10px] text-slate-400 font-mono">{order.id}</span>
                         </div>
                         {order.notes && (
-                          <div className="text-[11px] text-slate-500 italic mt-0.5">
+                          <div className="text-[11px] text-slate-500 italic mt-1">
                             Catatan: {order.notes}
                           </div>
                         )}
                       </td>
 
-                      {/* Ukuran & Lengan */}
+                      {/* Model & Ukuran */}
                       <td className="py-3.5 px-3">
                         <div className="font-semibold text-slate-800">
-                          {order.size}
+                          {order.genderCut === 'ladies' ? (
+                            <span className="text-rose-700 font-bold">Ladies</span>
+                          ) : (
+                            <span className="text-blue-950 font-bold">Reguler Men</span>
+                          )}{' '}
+                          &bull; <b>{order.size}</b>
                         </div>
-                        <div className="text-xs text-slate-500 capitalize">
-                          Lengan {order.sleeve}
+                        <div className="text-xs text-slate-500 capitalize mt-0.5">
+                          Lengan {order.sleeve === 'panjang' ? 'Panjang' : 'Pendek'}
                         </div>
                       </td>
 
@@ -580,26 +711,26 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
                             </button>
                           )}
 
-                          {/* Toggle status (Tandai Lunas / Belum) */}
+                          {/* Manual Toggle Status (Lunas / Batal) */}
                           <button
                             type="button"
                             onClick={() => handleToggleStatus(order)}
-                            title={isPaid ? 'Ubah jadi Menunggu' : 'Tandai Lunas (Cash/Transfer)'}
-                            className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                            title={isPaid ? 'Ubah status ke Menunggu' : 'Tandai LUNAS (Uang Masuk)'}
+                            className={`p-1.5 rounded-lg transition-colors border ${
                               isPaid
-                                ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                ? 'text-amber-600 hover:bg-amber-50 border-amber-200'
+                                : 'text-emerald-700 hover:bg-emerald-50 border-emerald-300 bg-emerald-50/50'
                             }`}
                           >
-                            {isPaid ? 'Batal Lunas' : 'Tandai Lunas'}
+                            <Check className="w-4 h-4" />
                           </button>
 
-                          {/* Delete order */}
+                          {/* Delete Order Button */}
                           <button
                             type="button"
                             onClick={() => handleDeleteOrder(order.id, order.name)}
                             title="Hapus Pesanan"
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -614,15 +745,15 @@ _Diperbarui pada: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' }
         </div>
       </div>
 
-      {/* QRIS MODAL IF OPENED FROM REKAP */}
+      {/* MODAL QRIS JIKA ADMIN INGIN MENAMPILKAN ULANG */}
       {activeModalOrder && (
         <QrisPaymentModal
           order={activeModalOrder}
           isOpen={!!activeModalOrder}
           onClose={() => setActiveModalOrder(null)}
           onPaymentSuccess={(updated) => {
-            setActiveModalOrder(updated);
             setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+            setActiveModalOrder(updated);
           }}
         />
       )}

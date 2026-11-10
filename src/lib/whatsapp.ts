@@ -19,6 +19,7 @@ export function formatPhoneNumberToWA(phone: string): string {
  */
 export function generateWhatsAppMessage(order: Order): string {
   const sleeveLabel = order.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
+  const cutLabel = order.genderCut === 'ladies' ? 'Ladies (Wanita)' : 'Reguler (Men)';
   const waktu = order.paidAt
     ? new Date(order.paidAt).toLocaleString('id-ID', {
         dateStyle: 'medium',
@@ -35,13 +36,14 @@ Halo Sdr/i *${order.name}*,
 Pembayaran pemesanan jersey komunitas kantor Anda telah *BERHASIL DIKONFIRMASI*.
 
 📋 *Detail Pesanan:*
-• No. Pesanan : *${order.id}*
-• Ukuran      : *${order.size}*
-• Jenis Lengan: *${sleeveLabel}*
-• Total Bayar : *${formatRupiah(order.totalPrice)}*
-• Status      : *LUNAS (Sudah Diterima)*
-• Waktu Bayar : ${waktu}
-${order.notes ? `• Catatan     : ${order.notes}\n` : ''}
+• No. Pesanan   : *${order.id}*
+• Bidang/Bagian : *${order.division || 'Bagian Umum'}*
+• Model Potongan: *${cutLabel}*
+• Ukuran Jersey : *${order.size}* (${sleeveLabel})
+• Total Bayar   : *${formatRupiah(order.totalPrice)}*
+• Status        : *LUNAS (Sudah Diterima)*
+• Waktu Bayar   : ${waktu}
+${order.notes ? `• Catatan       : ${order.notes}\n` : ''}
 Data pesanan Anda sudah masuk ke dalam daftar rekapitulasi vendor konveksi.
 
 Terima kasih atas partisipasinya! 🙏`;
@@ -67,7 +69,8 @@ export function getWhatsAppDirectLink(order: Order): string {
 export function getAdminWhatsAppConfirmationLink(order: Order): string {
   const adminTarget = formatPhoneNumberToWA(ADMIN_PHONE);
   const sleeveLabel = order.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
-  const text = `Halo Admin Aulia NAWASENA,\nSaya telah melakukan pembayaran pemesanan jersey:\n\n• No. Pesanan: ${order.id}\n• Nama: ${order.name}\n• Ukuran: ${order.size} (${sleeveLabel})\n• Total: ${formatRupiah(order.totalPrice)}\n• Metode: QRIS DANA Bisnis / Transfer Bank BRI\n\nBerikut saya kirimkan bukti pembayarannya. Mohon diverifikasi. Terima kasih! 🙏`;
+  const cutLabel = order.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men';
+  const text = `Halo Admin Aulia NAWASENA,\nSaya telah melakukan pembayaran pemesanan jersey:\n\n• No. Pesanan: ${order.id}\n• Nama: ${order.name}\n• Bidang/Bagian: ${order.division || 'Bagian Umum'}\n• Model: ${cutLabel}\n• Ukuran: ${order.size} (${sleeveLabel})\n• Total: ${formatRupiah(order.totalPrice)}\n• Metode: QRIS DANA Bisnis / Transfer Bank BRI\n\nBerikut saya kirimkan bukti pembayarannya. Mohon diverifikasi. Terima kasih! 🙏`;
   return `https://wa.me/${adminTarget}?text=${encodeURIComponent(text)}`;
 }
 

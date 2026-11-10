@@ -15,7 +15,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, size, sleeve, notes } = body;
+    let { name, division, genderCut, phone, size, sleeve, notes } = body;
 
     if (!name || !phone || !size || !sleeve) {
       return NextResponse.json(
@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validSizes: JerseySize[] = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+    if (size === '3XL') size = 'XXXL';
+
+    const validSizes: JerseySize[] = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'XS', '4XL'];
     const validSleeves: SleeveType[] = ['pendek', 'panjang'];
 
     if (!validSizes.includes(size)) {
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
 
     const newOrder = await createOrder({
       name,
+      division: division?.trim() || 'Bagian Umum',
+      genderCut: genderCut === 'ladies' ? 'ladies' : 'men',
       phone,
       size,
       sleeve,
