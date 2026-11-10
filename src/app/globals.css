@@ -24,3 +24,28 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Kemenkeu Bento Box Card */
+.kemenkeu-card {
+  background-color: #ffffff;
+  padding: 18px 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+  border-left: 5px solid #002B5B;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  height: 100%;
+}
+.kemenkeu-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 22px rgba(0, 43, 91, 0.09);
+}
+
+/* Panel Keranjang Belanja Aksen Emas Cual */
+.cart-panel {
+  background-color: #fdfdfc;
+  border: 1.5px solid #D4AF37;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.08);
+}
