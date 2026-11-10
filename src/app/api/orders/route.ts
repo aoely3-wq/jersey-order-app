@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllOrders, createOrder } from '@/lib/orders';
+import { getAllOrders, createOrder, clearAllOrders } from '@/lib/orders';
 import { JerseySize, SleeveType, CartItem, calculatePrice } from '@/lib/types';
 
 export async function GET() {
@@ -116,6 +116,22 @@ export async function POST(req: NextRequest) {
     console.error('Failed to create order:', error);
     return NextResponse.json(
       { success: false, message: error?.message || 'Gagal membuat pesanan' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    await clearAllOrders();
+    return NextResponse.json({
+      success: true,
+      message: 'Seluruh data pesanan uji coba (lokal dan Google Sheets) berhasil dibersihkan.',
+    });
+  } catch (error) {
+    console.error('Failed to clear orders:', error);
+    return NextResponse.json(
+      { success: false, message: 'Gagal membersihkan data pesanan' },
       { status: 500 }
     );
   }

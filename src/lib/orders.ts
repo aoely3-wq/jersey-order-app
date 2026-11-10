@@ -16,6 +16,7 @@ import {
   saveOrderToSheet,
   updateOrderStatusInSheet,
   deleteOrderFromSheet,
+  batchSyncToSheet,
 } from './googleSheets';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -27,56 +28,7 @@ function ensureDataFile() {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(DATA_FILE)) {
-      const initialOrders: Order[] = [
-        {
-          id: 'ORD-1001',
-          name: 'Budi Santoso',
-          division: 'Bagian Umum',
-          genderCut: 'men',
-          phone: '081234567890',
-          size: 'L',
-          sleeve: 'pendek',
-          basePrice: 130000,
-          sleeveExtra: 0,
-          sizeExtra: 0,
-          totalPrice: 130000,
-          status: 'PAID',
-          createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-          paidAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-        },
-        {
-          id: 'ORD-1002',
-          name: 'Siti Rahma',
-          division: 'Bidang PPA 1',
-          genderCut: 'ladies',
-          phone: '085711223344',
-          size: 'M',
-          sleeve: 'panjang',
-          basePrice: 130000,
-          sleeveExtra: 10000,
-          sizeExtra: 0,
-          totalPrice: 140000,
-          status: 'PAID',
-          createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-          paidAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-        },
-        {
-          id: 'ORD-1003',
-          name: 'Agus Pratama',
-          division: 'Bidang SKKI',
-          genderCut: 'men',
-          phone: '081987654321',
-          size: 'XXL',
-          sleeve: 'panjang',
-          basePrice: 130000,
-          sleeveExtra: 10000,
-          sizeExtra: 0,
-          totalPrice: 140000,
-          status: 'PENDING',
-          createdAt: new Date(Date.now() - 1800000).toISOString(),
-        },
-      ];
-      fs.writeFileSync(DATA_FILE, JSON.stringify(initialOrders, null, 2), 'utf8');
+      fs.writeFileSync(DATA_FILE, '[]', 'utf8');
     }
   } catch (err) {
     // Di serverless environment seperti Vercel, filesystem bersifat read-only.
@@ -284,6 +236,23 @@ export async function deleteOrder(id: string): Promise<boolean> {
   }
 
   return success;
+}
+
+export async function clearAllOrders(): Promise<boolean> {
+  // 1. Bersihkan Google Sheet jika aktif
+  if (isGoogleSheetConfigured()) {
+    await batchSyncToSheet([]);
+  }
+
+  // 2. Bersihkan file lokal
+  try {
+    ensureDataFile();
+    await saveOrdersLocally([]);
+  } catch (err) {
+    console.warn('Local clear ignored:', err);
+  }
+
+  return true;
 }
 
 async function getLocalOrdersDirect(): Promise<Order[]> {

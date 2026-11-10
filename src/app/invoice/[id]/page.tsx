@@ -372,10 +372,10 @@ function InvoiceContent() {
                 Metode Pembayaran
               </span>
               <p className="font-extrabold text-blue-950">
-                DOKU Payment Gateway (QRIS Resmi / VA Bank)
+                QRIS DANA Bisnis / DOKU Virtual Account Bank
               </p>
               <p className="text-[11px] text-slate-600">
-                Acquirer: Bank Indonesia GPN &bull; Merchant: JERSEY KANWIL DJPB BABEL
+                Acquirer: Bank Indonesia GPN &bull; Merchant: Aulia Nawasena, Pakaian &bull; NMID: ID1026635931953
               </p>
             </div>
 

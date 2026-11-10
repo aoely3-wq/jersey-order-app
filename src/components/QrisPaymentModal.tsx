@@ -21,6 +21,7 @@ import {
   Sparkles,
   Printer,
   FileText,
+  Download,
 } from 'lucide-react';
 import { Order, formatRupiah } from '@/lib/types';
 import {
@@ -58,6 +59,113 @@ export default function QrisPaymentModal({
   const [dokuError, setDokuError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'qris' | 'va'>('qris');
   const [qrMode, setQrMode] = useState<'dynamic' | 'poster'>('dynamic');
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadQR = () => {
+    if (qrMode === 'poster') {
+      const a = document.createElement('a');
+      a.href = '/qris-dana.jpg';
+      a.download = `QRIS-DANA-Aulia-Nawasena-${currentOrder.id}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    try {
+      setDownloading(true);
+      const svg = document.getElementById('dynamic-qris-svg');
+      if (!svg) {
+        setDownloading(false);
+        return;
+      }
+
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const URL = window.URL || window.webkitURL || window;
+      const blobURL = URL.createObjectURL(svgBlob);
+
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 600;
+        canvas.height = 780;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setDownloading(false);
+          return;
+        }
+
+        // Background putih
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Header Merah QRIS
+        ctx.fillStyle = '#ED1C24';
+        ctx.fillRect(0, 0, canvas.width, 70);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('QRIS - PEMBAYARAN NASIONAL', canvas.width / 2, 44);
+
+        // Merchant Name DANA Bisnis
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(QRIS_MERCHANT_NAME, canvas.width / 2, 115);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '15px monospace';
+        ctx.fillText(`NMID: ${QRIS_NMID}`, canvas.width / 2, 140);
+
+        // Gambar QR Code SVG di tengah
+        ctx.drawImage(img, 110, 165, 380, 380);
+
+        // Box Info Tagihan
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(40, 570, 520, 160);
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(40, 570, 520, 160);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '15px sans-serif';
+        ctx.fillText(`No. Pesanan: ${currentOrder.id}`, canvas.width / 2, 605);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText(
+          `Pemesan: ${currentOrder.name} (${currentOrder.division || 'Bagian Umum'})`,
+          canvas.width / 2,
+          632
+        );
+
+        ctx.fillStyle = '#1e3a8a';
+        ctx.font = 'bold 30px sans-serif';
+        ctx.fillText(formatRupiah(currentOrder.totalPrice), canvas.width / 2, 676);
+
+        ctx.fillStyle = '#059669';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('✓ Nominal Terkunci Otomatis (DANA Bisnis)', canvas.width / 2, 708);
+
+        const pngUrl = canvas.toDataURL('image/png');
+        const dl = document.createElement('a');
+        dl.download = `QRIS-Jersey-${currentOrder.id}.png`;
+        dl.href = pngUrl;
+        document.body.appendChild(dl);
+        dl.click();
+        document.body.removeChild(dl);
+        setDownloading(false);
+      };
+      img.onerror = () => {
+        setDownloading(false);
+      };
+      img.src = blobURL;
+    } catch (err) {
+      console.error('Download QR failed:', err);
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentOrder(order);
@@ -218,40 +326,40 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* TAB SWITCHER: QRIS RESMI DOKU VS VIRTUAL ACCOUNT DOKU */}
+          {/* TAB SWITCHER: QRIS DANA BISNIS VS VIRTUAL ACCOUNT DOKU */}
           {/* ============================================================== */}
           {!isPaid && (
             <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl border border-slate-200 mb-4 gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab('qris')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'qris'
                     ? 'bg-blue-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                 }`}
               >
-                <QrCode className="w-3.5 h-3.5" />
-                <span>QRIS DOKU (Scan)</span>
+                <QrCode className="w-3.5 h-3.5 text-amber-300" />
+                <span className="truncate">QRIS DANA Bisnis</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('va')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'va'
                     ? 'bg-blue-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
-                <span>Virtual Account (VA)</span>
+                <span className="truncate">VA Bank (DOKU)</span>
               </button>
             </div>
           )}
 
           {/* ============================================================== */}
-          {/* TAB 1: QRIS RESMI DOKU (JERSEY KANWIL DJPB BABEL) */}
+          {/* TAB 1: QRIS DANA BISNIS (AULIA NAWASENA, PAKAIAN) */}
           {/* ============================================================== */}
           {!isPaid && activeTab === 'qris' && (
             <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white mb-4 animate-in fade-in duration-200">
@@ -260,7 +368,7 @@ export default function QrisPaymentModal({
                 <div className="flex items-center gap-2">
                   <span className="font-black tracking-widest text-lg font-sans">QRIS</span>
                   <span className="text-[10px] tracking-tight bg-white/20 px-2 py-0.5 rounded font-medium">
-                    DOKU Merchant
+                    DANA Bisnis Merchant
                   </span>
                 </div>
                 <div className="text-[10px] tracking-tight font-semibold bg-red-950/40 px-2 py-0.5 rounded text-white border border-white/20">
@@ -274,7 +382,7 @@ export default function QrisPaymentModal({
                   {QRIS_MERCHANT_NAME}
                 </p>
                 <p className="text-[11px] font-mono font-medium text-slate-500">
-                  NMID: {QRIS_NMID} &bull; A01
+                  NMID: {QRIS_NMID} &bull; UMI
                 </p>
                 <p className="text-[11px] font-medium text-slate-600 mt-0.5">
                   {currentOrder.division || 'Bagian Umum'} &bull;{' '}
@@ -306,7 +414,7 @@ export default function QrisPaymentModal({
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  📄 Poster Asli DOKU
+                  📄 Poster Asli DANA
                 </button>
               </div>
 
@@ -316,6 +424,7 @@ export default function QrisPaymentModal({
                   <>
                     <div className="p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-inner">
                       <QRCodeSVG
+                        id="dynamic-qris-svg"
                         value={dynamicQrisPayload}
                         size={195}
                         level="M"
@@ -332,25 +441,44 @@ export default function QrisPaymentModal({
                         {formatRupiah(currentOrder.totalPrice)}
                       </p>
                     </div>
+
+                    {/* Tombol Download Gambar QR */}
+                    <button
+                      type="button"
+                      onClick={handleDownloadQR}
+                      disabled={downloading}
+                      className="mt-3.5 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 hover:from-blue-950 hover:to-indigo-950 text-white font-extrabold text-xs shadow-md shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 text-amber-300" />
+                      <span>{downloading ? 'Menyiapkan File...' : 'Download Gambar QR (PNG)'}</span>
+                    </button>
                   </>
                 ) : (
                   <div className="flex flex-col items-center">
                     <div className="relative w-52 h-72 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
                       <Image
-                        src="/qris-doku.png"
-                        alt="Poster QRIS DOKU Jersey Kanwil DJPb Babel"
+                        src="/qris-dana.jpg"
+                        alt="Poster QRIS DANA Bisnis Aulia Nawasena"
                         fill
                         className="object-contain"
                       />
                     </div>
-                    <div className="mt-2 text-center">
+                    <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
+                      <button
+                        type="button"
+                        onClick={handleDownloadQR}
+                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Download Poster DANA (JPG)</span>
+                      </button>
                       <a
-                        href="/qris-doku.png"
+                        href="/qris-dana.jpg"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-bold hover:underline"
+                        className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-medium hover:underline mt-0.5"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <Eye className="w-3 h-3" />
                         <span>Buka Poster HD Ukuran Penuh &rarr;</span>
                       </a>
                     </div>
@@ -361,7 +489,7 @@ export default function QrisPaymentModal({
               {/* Bottom Instructions */}
               <div className="bg-slate-50 px-4 py-2.5 text-center border-t border-slate-100">
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Scan via <b>BCA, Mandiri Livin&apos;, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, LinkAja</b> &amp; semua aplikasi m-Banking berlogo QRIS. Pembayaran otomatis terverifikasi <b>LUNAS</b> begitu selesai!
+                  Scan via <b>BCA, Mandiri Livin&apos;, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, LinkAja</b> &amp; semua aplikasi m-Banking berlogo QRIS. Anda juga bisa men-download gambar QR di atas untuk disimpan atau dibagikan.
                 </p>
               </div>
             </div>

@@ -119,6 +119,27 @@ export default function RekapPage() {
     }
   };
 
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearAllOrders = async () => {
+    const confirm = window.confirm(
+      'PERINGATAN: Apakah Anda yakin ingin menghapus seluruh data pesanan uji coba?\n\nSemua data di aplikasi dan Google Sheets akan dikosongkan.'
+    );
+    if (!confirm) return;
+
+    setClearing(true);
+    try {
+      const res = await fetch('/api/orders', { method: 'DELETE' });
+      const data = await res.json();
+      alert(data.message || 'Data berhasil dikosongkan!');
+      fetchOrders();
+    } catch {
+      alert('Gagal membersihkan data.');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   // Filtered orders
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -461,6 +482,16 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
                 <span>{syncingSheet ? 'Menyinkronkan...' : 'Sinkronkan Data ke Google Sheets'}</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={handleClearAllOrders}
+              disabled={clearing}
+              className="inline-flex items-center gap-1 text-xs text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1 rounded-full font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3 text-red-600" />
+              <span>{clearing ? 'Membersihkan...' : 'Bersihkan Data Uji Coba'}</span>
+            </button>
 
             {syncMessage && (
               <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">

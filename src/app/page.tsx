@@ -273,7 +273,7 @@ export default function OrderPage() {
             2 Pilihan Warna: Varian Putih (Biru Kemenkeu) &bull; Gradasi Merah Maroon
           </p>
           <p className="mt-3 text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-2xl">
-            Pemesanan resmi seragam jersey kantor. Anda dapat memesan <b>lebih dari satu jersey</b> (beda warna, ukuran, atau lengan) dalam <b>satu keranjang pembayaran sekaligus</b> via QRIS Dinamis &amp; Virtual Account DOKU.
+            Pemesanan resmi seragam jersey kantor. Anda dapat memesan <b>lebih dari satu jersey</b> (beda warna, ukuran, atau lengan) dalam <b>satu keranjang pembayaran sekaligus</b> via QRIS DANA Bisnis &amp; Virtual Account DOKU.
           </p>
 
           <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
@@ -1020,7 +1020,7 @@ export default function OrderPage() {
                   </span>
                   <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    QRIS Dinamis &amp; VA DOKU
+                    QRIS DANA Bisnis &amp; VA DOKU
                   </span>
                 </div>
                 <div className="text-right">
