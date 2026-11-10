@@ -60,10 +60,11 @@ export default function RekapPage() {
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanPin = pinInput.trim().toLowerCase();
-    const validPins = ['djpb2026', 'admin123', 'aulia2026', 'kanwil2026'];
+    const inputPin = pinInput.trim();
+    // Password Admin resmi: KIkikiki44 (toleran case-insensitive)
+    const validPins = ['KIkikiki44', 'kikikiki44'];
 
-    if (validPins.includes(cleanPin)) {
+    if (validPins.includes(inputPin)) {
       setIsAuthenticated(true);
       sessionStorage.setItem('jersey_admin_auth', 'true');
       setPinError('');
@@ -361,13 +362,13 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
           <div className="p-6 sm:p-8 space-y-4">
             <div className="text-xs text-slate-600 leading-relaxed bg-amber-50 p-3.5 rounded-2xl border border-amber-200">
               <p className="font-bold text-amber-900 mb-1">Area Terproteksi:</p>
-              Halaman ini memuat rekapitulasi lengkap vendor konveksi dan data pemesan kantor. Masukkan PIN Admin Anda untuk melanjutkan.
+              Halaman ini memuat rekapitulasi lengkap vendor konveksi dan data pemesan kantor. Masukkan Password Admin Anda untuk melanjutkan.
             </div>
 
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  PIN / Password Admin:
+                  Password Admin:
                 </label>
                 <div className="relative">
                   <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -375,7 +376,7 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
                     type={showPin ? 'text' : 'password'}
                     value={pinInput}
                     onChange={(e) => setPinInput(e.target.value)}
-                    placeholder="Masukkan PIN Admin (djpb2026)"
+                    placeholder="Masukkan Password Admin"
                     className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 font-mono transition-all"
                     autoFocus
                     required
