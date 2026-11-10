@@ -371,11 +371,11 @@ function InvoiceContent() {
               <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
                 Metode Pembayaran
               </span>
-              <p className="font-extrabold text-blue-950">
-                QRIS DANA Bisnis / DOKU Virtual Account Bank
+              <p className="font-extrabold text-[#002B5B]">
+                QRIS &amp; Virtual Account Bank (DOKU Gateway)
               </p>
               <p className="text-[11px] text-slate-600">
-                Acquirer: Bank Indonesia GPN &bull; Merchant: Aulia Nawasena, Pakaian &bull; NMID: ID1026635931953
+                Acquirer: DOKU (PT Nusa Satu Inti Artha) &bull; Merchant: Jersey Kanwil DJPb Babel &bull; NMID: ID1026636092060
               </p>
             </div>
 

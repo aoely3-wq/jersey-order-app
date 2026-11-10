@@ -50,29 +50,31 @@ export function generateWhatsAppMessage(order: Order): string {
 
   const totalQtyText = order.totalQty ? `${order.totalQty} pcs` : '1 pcs';
 
-  return `*KONFIRMASI PEMBAYARAN JERSEY KANTOR* ✅
+  return `*KONFIRMASI PEMBAYARAN JERSEY RESMI KANWIL DJPB BABEL* ✅
 
 Halo Sdr/i *${order.name}*,
-Pembayaran pemesanan jersey komunitas kantor Anda telah *BERHASIL DIKONFIRMASI*.
+Pembayaran pemesanan Jersey Edisi Resmi 2026 Anda telah *BERHASIL DIKONFIRMASI LUNAS*.
 
-📋 *Detail Pesanan:*
+📋 *Rincian Pesanan:*
 • No. Pesanan   : *${order.id}*
 • Bidang/Bagian : *${order.division || 'Bagian Umum'}*
 • Total Jumlah  : *${totalQtyText}*
 • Rincian Item  :
 ${itemDetails}
 • Total Bayar   : *${formatRupiah(order.totalPrice)}*
-• Status        : *LUNAS (Sudah Diterima)*
+• Status        : *LUNAS (Terverifikasi DOKU)*
 • Waktu Bayar   : ${waktu}
 ${order.notes ? `• Catatan       : ${order.notes}\n` : ''}
-📄 *Bukti Pembayaran / Invoice PDF:*
+📄 *Bukti Pembayaran / Invoice PDF Resmi:*
 ${invoiceUrl}
 
 🔍 *Cek Status Mandiri:*
 ${statusUrl}
 
-Data pesanan Anda sudah masuk ke dalam daftar rekapitulasi vendor konveksi.
-Terima kasih atas partisipasinya! 🙏`;
+Data pesanan Anda sudah otomatis masuk ke dalam rekapitulasi vendor konveksi untuk proses produksi seragam.
+
+Terima kasih atas partisipasinya! 🙏
+_Aulia NAWASENA • Panitia Jersey Kanwil DJPb Bangka Belitung_`;
 }
 
 /**
@@ -117,14 +119,14 @@ export function getAdminWhatsAppConfirmationLink(order: Order): string {
 }
 
 /**
- * Pengiriman otomatis via Gateway WhatsApp (misal Fonnte / sejenisnya) jika TOKEN dikonfigurasi
+ * Pengiriman otomatis via Gateway WhatsApp (Fonnte) jika TOKEN dikonfigurasi
  */
 export async function sendWhatsAppNotification(order: Order): Promise<{ success: boolean; message: string }> {
-  const token = process.env.FONNTE_TOKEN;
+  const token = process.env.FONNTE_TOKEN?.trim() || 'L51Vfvj6BNViqEM3pUV8';
   const target = formatPhoneNumberToWA(order.phone);
   const message = generateWhatsAppMessage(order);
 
-  // Jika token belum diset di .env.local, catat log simulasi pengiriman
+  // Jika token belum diset, catat log simulasi pengiriman
   if (!token) {
     console.log(`[WhatsApp Mock Dispatch] Terkirim ke ${target}:\n${message}`);
     return {
@@ -148,6 +150,7 @@ export async function sendWhatsAppNotification(order: Order): Promise<{ success:
     });
 
     const result = await res.json();
+    console.log('[Fonnte Send Result]:', result);
     return {
       success: result.status === true,
       message: result.reason || 'Pesan WA otomatis berhasil dikirim',

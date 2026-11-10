@@ -64,8 +64,8 @@ export default function QrisPaymentModal({
   const handleDownloadQR = () => {
     if (qrMode === 'poster') {
       const a = document.createElement('a');
-      a.href = '/qris-dana.jpg';
-      a.download = `QRIS-DANA-Aulia-Nawasena-${currentOrder.id}.jpg`;
+      a.href = '/qris-doku.png';
+      a.download = `QRIS-DOKU-Kanwil-DJPb-Babel-${currentOrder.id}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -109,7 +109,7 @@ export default function QrisPaymentModal({
         ctx.textAlign = 'center';
         ctx.fillText('QRIS - PEMBAYARAN NASIONAL', canvas.width / 2, 44);
 
-        // Merchant Name DANA Bisnis
+        // Merchant Name DOKU
         ctx.fillStyle = '#0f172a';
         ctx.font = 'bold 22px sans-serif';
         ctx.fillText(QRIS_MERCHANT_NAME, canvas.width / 2, 115);
@@ -146,7 +146,7 @@ export default function QrisPaymentModal({
 
         ctx.fillStyle = '#059669';
         ctx.font = 'bold 14px sans-serif';
-        ctx.fillText('✓ Nominal Terkunci Otomatis (DANA Bisnis)', canvas.width / 2, 708);
+        ctx.fillText('✓ Nominal Terkunci Otomatis (DOKU Gateway)', canvas.width / 2, 708);
 
         const pngUrl = canvas.toDataURL('image/png');
         const dl = document.createElement('a');
@@ -326,7 +326,7 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* TAB SWITCHER: QRIS DANA BISNIS VS VIRTUAL ACCOUNT DOKU */}
+          {/* TAB SWITCHER: QRIS DOKU RESMI VS VIRTUAL ACCOUNT DOKU */}
           {/* ============================================================== */}
           {!isPaid && (
             <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl border border-slate-200 mb-4 gap-1">
@@ -335,12 +335,12 @@ export default function QrisPaymentModal({
                 onClick={() => setActiveTab('qris')}
                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'qris'
-                    ? 'bg-blue-900 text-white shadow-xs'
+                    ? 'bg-[#002B5B] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                 }`}
               >
                 <QrCode className="w-3.5 h-3.5 text-amber-300" />
-                <span className="truncate">QRIS DANA Bisnis</span>
+                <span className="truncate">QRIS DOKU Resmi</span>
               </button>
 
               <button
@@ -348,18 +348,18 @@ export default function QrisPaymentModal({
                 onClick={() => setActiveTab('va')}
                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'va'
-                    ? 'bg-blue-900 text-white shadow-xs'
+                    ? 'bg-[#002B5B] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
-                <span className="truncate">VA Bank (DOKU)</span>
+                <span className="truncate">VA Bank &amp; E-Wallet</span>
               </button>
             </div>
           )}
 
           {/* ============================================================== */}
-          {/* TAB 1: QRIS DANA BISNIS (AULIA NAWASENA, PAKAIAN) */}
+          {/* TAB 1: QRIS DOKU RESMI (JERSEY KANWIL DJPB BABEL) */}
           {/* ============================================================== */}
           {!isPaid && activeTab === 'qris' && (
             <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white mb-4 animate-in fade-in duration-200">
@@ -368,7 +368,7 @@ export default function QrisPaymentModal({
                 <div className="flex items-center gap-2">
                   <span className="font-black tracking-widest text-lg font-sans">QRIS</span>
                   <span className="text-[10px] tracking-tight bg-white/20 px-2 py-0.5 rounded font-medium">
-                    DANA Bisnis Merchant
+                    DOKU Payment Gateway
                   </span>
                 </div>
                 <div className="text-[10px] tracking-tight font-semibold bg-red-950/40 px-2 py-0.5 rounded text-white border border-white/20">
@@ -378,11 +378,11 @@ export default function QrisPaymentModal({
 
               {/* Merchant Details */}
               <div className="px-4 pt-2.5 pb-2 text-center border-b border-slate-100 bg-slate-50/60">
-                <p className="text-xs uppercase font-black tracking-wider text-blue-950">
+                <p className="text-xs uppercase font-black tracking-wider text-[#002B5B]">
                   {QRIS_MERCHANT_NAME}
                 </p>
                 <p className="text-[11px] font-mono font-medium text-slate-500">
-                  NMID: {QRIS_NMID} &bull; UMI
+                  NMID: {QRIS_NMID} &bull; UKE
                 </p>
                 <p className="text-[11px] font-medium text-slate-600 mt-0.5">
                   {currentOrder.division || 'Bagian Umum'} &bull;{' '}
@@ -399,7 +399,7 @@ export default function QrisPaymentModal({
                   onClick={() => setQrMode('dynamic')}
                   className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     qrMode === 'dynamic'
-                      ? 'bg-white text-blue-950 shadow-xs'
+                      ? 'bg-white text-[#002B5B] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -410,11 +410,11 @@ export default function QrisPaymentModal({
                   onClick={() => setQrMode('poster')}
                   className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     qrMode === 'poster'
-                      ? 'bg-white text-blue-950 shadow-xs'
+                      ? 'bg-white text-[#002B5B] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  📄 Poster Asli DANA
+                  📄 Poster Asli DOKU
                 </button>
               </div>
 
@@ -447,7 +447,7 @@ export default function QrisPaymentModal({
                       type="button"
                       onClick={handleDownloadQR}
                       disabled={downloading}
-                      className="mt-3.5 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 hover:from-blue-950 hover:to-indigo-950 text-white font-extrabold text-xs shadow-md shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                      className="mt-3.5 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#002B5B] via-[#003875] to-[#001D3D] hover:from-[#001D3D] hover:to-[#002B5B] text-white font-extrabold text-xs shadow-md shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                     >
                       <Download className="w-4 h-4 text-amber-300" />
                       <span>{downloading ? 'Menyiapkan File...' : 'Download Gambar QR (PNG)'}</span>
@@ -457,8 +457,8 @@ export default function QrisPaymentModal({
                   <div className="flex flex-col items-center">
                     <div className="relative w-52 h-72 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
                       <Image
-                        src="/qris-dana.jpg"
-                        alt="Poster QRIS DANA Bisnis Aulia Nawasena"
+                        src="/qris-doku.png"
+                        alt="Poster QRIS DOKU Jersey Kanwil DJPb Babel"
                         fill
                         className="object-contain"
                       />
@@ -467,13 +467,13 @@ export default function QrisPaymentModal({
                       <button
                         type="button"
                         onClick={handleDownloadQR}
-                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-[#002B5B] hover:bg-[#001D3D] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                       >
                         <Download className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Download Poster DANA (JPG)</span>
+                        <span>Download Poster DOKU (PNG)</span>
                       </button>
                       <a
-                        href="/qris-dana.jpg"
+                        href="/qris-doku.png"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-medium hover:underline mt-0.5"
@@ -484,12 +484,51 @@ export default function QrisPaymentModal({
                     </div>
                   </div>
                 )}
+
+                {/* Direct Link to DOKU Checkout */}
+                {dokuUrl && (
+                  <a
+                    href={dokuUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3.5 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900 to-indigo-950 hover:from-blue-950 hover:to-slate-950 text-white font-extrabold py-3 px-4 rounded-xl text-xs shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]"
+                  >
+                    <CreditCard className="w-4 h-4 text-amber-300" />
+                    <span>Buka Halaman DOKU Checkout (Layar Penuh) &rarr;</span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                  </a>
+                )}
+
+                {/* Tombol Konfirmasi Selesai Bayar Langsung */}
+                <div className="w-full mt-3 pt-3 border-t border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={handleAdminMarkPaid}
+                    disabled={isSimulating}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-4 rounded-xl shadow-md text-xs sm:text-sm transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                  >
+                    {isSimulating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Memverifikasi Pembayaran...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                        <span>Saya Sudah Selesai Bayar (Konfirmasi Lunas)</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-slate-500 text-center mt-1.5 leading-relaxed">
+                    Sistem otomatis mendeteksi lunas via Webhook DOKU. Anda juga dapat menekan tombol di atas setelah transfer berhasil untuk langsung mencetak Bukti Faktur PDF.
+                  </p>
+                </div>
               </div>
 
               {/* Bottom Instructions */}
               <div className="bg-slate-50 px-4 py-2.5 text-center border-t border-slate-100">
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Scan via <b>BCA, Mandiri Livin&apos;, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, LinkAja</b> &amp; semua aplikasi m-Banking berlogo QRIS. Anda juga bisa men-download gambar QR di atas untuk disimpan atau dibagikan.
+                  Scan via <b>BCA, Mandiri Livin&apos;, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, LinkAja</b> &amp; semua aplikasi m-Banking berlogo QRIS. Nominal transaksi otomatis terkunci pas.
                 </p>
               </div>
             </div>

@@ -961,7 +961,7 @@ export default function OrderPage() {
                   </span>
                   <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    QRIS DANA Bisnis &amp; VA DOKU
+                    QRIS &amp; Virtual Account Bank (DOKU)
                   </span>
                 </div>
                 <div className="text-right">
