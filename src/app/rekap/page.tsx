@@ -182,20 +182,35 @@ export default function RekapPage() {
     const ladiesPanjang = initRow();
 
     orders.forEach((o) => {
-      const isLadies = o.genderCut === 'ladies';
-      const isPanjang = o.sleeve === 'panjang';
-      let sizeStr = o.size as string;
-      if (sizeStr === '3XL') sizeStr = 'XXXL';
-      if (sizeStr === '4XL') sizeStr = 'XXXXL';
-      const sizeKey = sizeStr as JerseySize;
+      const items =
+        o.items && o.items.length > 0
+          ? o.items
+          : [
+              {
+                genderCut: o.genderCut || 'men',
+                size: o.size || 'L',
+                sleeve: o.sleeve || 'pendek',
+                quantity: 1,
+              },
+            ];
 
-      if (isLadies) {
-        if (isPanjang) ladiesPanjang[sizeKey] = (ladiesPanjang[sizeKey] || 0) + 1;
-        else ladiesPendek[sizeKey] = (ladiesPendek[sizeKey] || 0) + 1;
-      } else {
-        if (isPanjang) menPanjang[sizeKey] = (menPanjang[sizeKey] || 0) + 1;
-        else menPendek[sizeKey] = (menPendek[sizeKey] || 0) + 1;
-      }
+      items.forEach((it) => {
+        const isLadies = it.genderCut === 'ladies';
+        const isPanjang = it.sleeve === 'panjang';
+        let sizeStr = it.size as string;
+        if (sizeStr === '3XL') sizeStr = 'XXXL';
+        if (sizeStr === '4XL') sizeStr = 'XXXXL';
+        const sizeKey = sizeStr as JerseySize;
+        const qty = it.quantity || 1;
+
+        if (isLadies) {
+          if (isPanjang) ladiesPanjang[sizeKey] = (ladiesPanjang[sizeKey] || 0) + qty;
+          else ladiesPendek[sizeKey] = (ladiesPendek[sizeKey] || 0) + qty;
+        } else {
+          if (isPanjang) menPanjang[sizeKey] = (menPanjang[sizeKey] || 0) + qty;
+          else menPendek[sizeKey] = (menPendek[sizeKey] || 0) + qty;
+        }
+      });
     });
 
     const totalPerSize: Record<JerseySize, number> = {
@@ -756,23 +771,54 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
                         </a>
                       </td>
                       <td className="py-3 px-3">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            order.genderCut === 'ladies'
-                              ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                              : 'bg-blue-100 text-blue-800 border border-blue-200'
-                          }`}
-                        >
-                          {order.genderCut === 'ladies' ? 'Ladies' : 'Reguler'}
-                        </span>
+                        {order.items && order.items.length > 0 ? (
+                          <div className="space-y-1">
+                            {order.items.map((it, idx) => (
+                              <div key={idx} className="flex items-center gap-1 text-[11px]">
+                                <span
+                                  className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                    it.color === 'maroon'
+                                      ? 'bg-rose-100 text-rose-900 border border-rose-200'
+                                      : 'bg-blue-100 text-blue-900 border border-blue-200'
+                                  }`}
+                                >
+                                  {it.color === 'maroon' ? 'Maroon' : 'Putih'}
+                                </span>
+                                <span className="font-semibold text-slate-800">
+                                  {it.quantity}x {it.genderCut === 'ladies' ? 'Ladies' : 'Men'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              order.genderCut === 'ladies'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                : 'bg-blue-100 text-blue-800 border border-blue-200'
+                            }`}
+                          >
+                            {order.genderCut === 'ladies' ? 'Ladies' : 'Reguler'}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-center font-bold text-slate-800">
-                        {order.size}
+                        {order.items && order.items.length > 0
+                          ? order.items.map((it) => `${it.size} (${it.quantity})`).join(', ')
+                          : order.size}
                       </td>
                       <td className="py-3 px-3">
-                        <span className="capitalize text-slate-600">
-                          {order.sleeve === 'panjang' ? 'Panjang (+10rb)' : 'Pendek'}
-                        </span>
+                        {order.items && order.items.length > 0 ? (
+                          <span className="text-[11px] text-slate-600">
+                            {order.items
+                              .map((it) => (it.sleeve === 'panjang' ? 'Pjg' : 'Pdk'))
+                              .join(', ')}
+                          </span>
+                        ) : (
+                          <span className="capitalize text-slate-600">
+                            {order.sleeve === 'panjang' ? 'Panjang (+10rb)' : 'Pendek'}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-right font-black text-slate-900">
                         {formatRupiah(order.totalPrice)}
@@ -791,13 +837,23 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
                         )}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setActiveModalOrder(order)}
-                          className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
-                        >
-                          Kelola
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setActiveModalOrder(order)}
+                            className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
+                          >
+                            Kelola
+                          </button>
+                          <Link
+                            href={`/invoice/${order.id}`}
+                            target="_blank"
+                            className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors"
+                            title="Buka Invoice PDF"
+                          >
+                            PDF
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );

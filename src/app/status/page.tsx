@@ -250,13 +250,19 @@ export default function StatusPage() {
                             </button>
                           ) : (
                             <>
+                              <Link
+                                href={`/invoice/${order.id}`}
+                                className="inline-flex items-center justify-center gap-1.5 bg-blue-900 hover:bg-blue-950 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-xs"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-amber-300" />
+                                <span>Cetak Invoice PDF</span>
+                              </Link>
                               <button
                                 type="button"
                                 onClick={() => setActiveModalOrder(order)}
                                 className="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all cursor-pointer shadow-xs"
                               >
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>Lihat Bukti Lunas</span>
+                                <span>Bukti QRIS</span>
                               </button>
                               <a
                                 href={waUrl}

@@ -1,6 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-import { Order, OrderStatus, calculatePrice, JerseySize, SleeveType, GenderCut } from './types';
+import {
+  Order,
+  OrderStatus,
+  calculatePrice,
+  JerseySize,
+  SleeveType,
+  GenderCut,
+  JerseyColor,
+  CartItem,
+} from './types';
 import {
   isGoogleSheetConfigured,
   fetchOrdersFromSheet,
@@ -110,34 +119,84 @@ export async function getOrderById(id: string): Promise<Order | null> {
 export interface CreateOrderParams {
   name: string;
   division: string;
-  genderCut: GenderCut;
   phone: string;
-  size: JerseySize;
-  sleeve: SleeveType;
+  items?: CartItem[];
+  genderCut?: GenderCut;
+  size?: JerseySize;
+  sleeve?: SleeveType;
+  color?: JerseyColor;
   notes?: string;
 }
 
 export async function createOrder(params: CreateOrderParams): Promise<Order> {
-  const pricing = calculatePrice(params.sleeve, params.size);
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const newId = `ORD-${Date.now().toString().slice(-4)}${randomSuffix.toString().slice(-2)}`;
 
-  const newOrder: Order = {
-    id: newId,
-    name: params.name.trim(),
-    division: params.division?.trim() || 'Bagian Umum',
-    genderCut: params.genderCut || 'men',
-    phone: params.phone.trim(),
-    size: params.size,
-    sleeve: params.sleeve,
-    basePrice: pricing.basePrice,
-    sleeveExtra: pricing.sleeveExtra,
-    sizeExtra: pricing.sizeExtra,
-    totalPrice: pricing.totalPrice,
-    status: 'PENDING',
-    createdAt: new Date().toISOString(),
-    notes: params.notes?.trim() || undefined,
-  };
+  let newOrder: Order;
+
+  if (params.items && Array.isArray(params.items) && params.items.length > 0) {
+    const items = params.items;
+    const totalQty = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
+    const totalPrice = items.reduce((sum, it) => sum + it.subtotal, 0);
+    const firstItem = items[0];
+
+    newOrder = {
+      id: newId,
+      name: params.name.trim(),
+      division: params.division?.trim() || 'Bagian Umum',
+      genderCut: firstItem.genderCut,
+      phone: params.phone.trim(),
+      size: firstItem.size,
+      sleeve: firstItem.sleeve,
+      color: firstItem.color,
+      items,
+      totalQty,
+      basePrice: firstItem.basePrice,
+      sleeveExtra: firstItem.sleeveExtra,
+      sizeExtra: firstItem.sizeExtra,
+      totalPrice,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      notes: params.notes?.trim() || undefined,
+    };
+  } else {
+    const sleeve = params.sleeve || 'pendek';
+    const size = params.size || 'L';
+    const pricing = calculatePrice(sleeve, size);
+    const singleItem: CartItem = {
+      id: 'item-1',
+      color: params.color || 'putih',
+      genderCut: params.genderCut || 'men',
+      size,
+      sleeve,
+      quantity: 1,
+      basePrice: pricing.basePrice,
+      sleeveExtra: pricing.sleeveExtra,
+      sizeExtra: pricing.sizeExtra,
+      unitPrice: pricing.totalPrice,
+      subtotal: pricing.totalPrice,
+    };
+
+    newOrder = {
+      id: newId,
+      name: params.name.trim(),
+      division: params.division?.trim() || 'Bagian Umum',
+      genderCut: params.genderCut || 'men',
+      phone: params.phone.trim(),
+      size,
+      sleeve,
+      color: params.color || 'putih',
+      items: [singleItem],
+      totalQty: 1,
+      basePrice: pricing.basePrice,
+      sleeveExtra: pricing.sleeveExtra,
+      sizeExtra: pricing.sizeExtra,
+      totalPrice: pricing.totalPrice,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      notes: params.notes?.trim() || undefined,
+    };
+  }
 
   // 1. Simpan ke Google Sheet jika aktif
   if (isGoogleSheetConfigured()) {

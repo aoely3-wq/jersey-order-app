@@ -18,8 +18,6 @@ export function formatPhoneNumberToWA(phone: string): string {
  * Format pesan WhatsApp konfirmasi pembayaran yang rapi
  */
 export function generateWhatsAppMessage(order: Order): string {
-  const sleeveLabel = order.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
-  const cutLabel = order.genderCut === 'ladies' ? 'Ladies (Wanita)' : 'Reguler (Men)';
   const waktu = order.paidAt
     ? new Date(order.paidAt).toLocaleString('id-ID', {
         dateStyle: 'medium',
@@ -30,6 +28,28 @@ export function generateWhatsAppMessage(order: Order): string {
         timeStyle: 'short',
       });
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || 'https://jersey-order-app-chi.vercel.app';
+  const invoiceUrl = `${baseUrl}/invoice/${order.id}`;
+  const statusUrl = `${baseUrl}/status`;
+
+  let itemDetails = '';
+  if (order.items && order.items.length > 0) {
+    itemDetails = order.items
+      .map(
+        (it, idx) =>
+          `  ${idx + 1}. ${it.quantity}x Jersey ${it.color === 'maroon' ? 'Merah Maroon' : 'Putih (Biru)'} - ${it.genderCut === 'ladies' ? 'Ladies' : 'Men'} Size ${it.size} (${it.sleeve === 'panjang' ? 'Panjang' : 'Pendek'}): ${formatRupiah(it.subtotal)}`
+      )
+      .join('\n');
+  } else {
+    const sleeveLabel = order.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
+    const cutLabel = order.genderCut === 'ladies' ? 'Ladies (Wanita)' : 'Reguler (Men)';
+    const colorLabel = order.color === 'maroon' ? 'Merah Maroon' : 'Putih (Biru)';
+    itemDetails = `  • 1x Jersey ${colorLabel} - ${cutLabel} Size ${order.size} (${sleeveLabel}): ${formatRupiah(order.totalPrice)}`;
+  }
+
+  const totalQtyText = order.totalQty ? `${order.totalQty} pcs` : '1 pcs';
+
   return `*KONFIRMASI PEMBAYARAN JERSEY KANTOR* ✅
 
 Halo Sdr/i *${order.name}*,
@@ -38,14 +58,20 @@ Pembayaran pemesanan jersey komunitas kantor Anda telah *BERHASIL DIKONFIRMASI*.
 📋 *Detail Pesanan:*
 • No. Pesanan   : *${order.id}*
 • Bidang/Bagian : *${order.division || 'Bagian Umum'}*
-• Model Potongan: *${cutLabel}*
-• Ukuran Jersey : *${order.size}* (${sleeveLabel})
+• Total Jumlah  : *${totalQtyText}*
+• Rincian Item  :
+${itemDetails}
 • Total Bayar   : *${formatRupiah(order.totalPrice)}*
 • Status        : *LUNAS (Sudah Diterima)*
 • Waktu Bayar   : ${waktu}
 ${order.notes ? `• Catatan       : ${order.notes}\n` : ''}
-Data pesanan Anda sudah masuk ke dalam daftar rekapitulasi vendor konveksi.
+📄 *Bukti Pembayaran / Invoice PDF:*
+${invoiceUrl}
 
+🔍 *Cek Status Mandiri:*
+${statusUrl}
+
+Data pesanan Anda sudah masuk ke dalam daftar rekapitulasi vendor konveksi.
 Terima kasih atas partisipasinya! 🙏`;
 }
 
@@ -68,9 +94,25 @@ export function getWhatsAppDirectLink(order: Order): string {
  */
 export function getAdminWhatsAppConfirmationLink(order: Order): string {
   const adminTarget = formatPhoneNumberToWA(ADMIN_PHONE);
-  const sleeveLabel = order.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
-  const cutLabel = order.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men';
-  const text = `Halo Admin Aulia NAWASENA,\nSaya telah melakukan pembayaran pemesanan jersey:\n\n• No. Pesanan: ${order.id}\n• Nama: ${order.name}\n• Bidang/Bagian: ${order.division || 'Bagian Umum'}\n• Model: ${cutLabel}\n• Ukuran: ${order.size} (${sleeveLabel})\n• Total: ${formatRupiah(order.totalPrice)}\n• Metode: QRIS DANA Bisnis / Transfer Bank BRI\n\nBerikut saya kirimkan bukti pembayarannya. Mohon diverifikasi. Terima kasih! 🙏`;
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || 'https://jersey-order-app-chi.vercel.app';
+  const invoiceUrl = `${baseUrl}/invoice/${order.id}`;
+
+  let itemsSummary = '';
+  if (order.items && order.items.length > 0) {
+    itemsSummary = order.items
+      .map(
+        (it) =>
+          `• ${it.quantity}x ${it.color === 'maroon' ? 'Maroon' : 'Putih'} (${it.genderCut === 'ladies' ? 'Ladies' : 'Men'} ${it.size} - ${it.sleeve === 'panjang' ? 'Pjg' : 'Pdk'})`
+      )
+      .join('\n');
+  } else {
+    const sleeveLabel = order.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
+    const cutLabel = order.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men';
+    itemsSummary = `• 1x ${order.color === 'maroon' ? 'Maroon' : 'Putih'} (${cutLabel} ${order.size} - ${sleeveLabel})`;
+  }
+
+  const text = `Halo Admin Aulia NAWASENA,\nSaya telah melakukan pembayaran pemesanan jersey:\n\n• No. Pesanan: ${order.id}\n• Nama: ${order.name}\n• Bidang/Bagian: ${order.division || 'Bagian Umum'}\n${itemsSummary}\n• Total: ${formatRupiah(order.totalPrice)}\n• Metode: DOKU QRIS / Virtual Account\n• Bukti Invoice: ${invoiceUrl}\n\nMohon diverifikasi. Terima kasih! 🙏`;
   return `https://wa.me/${adminTarget}?text=${encodeURIComponent(text)}`;
 }
 

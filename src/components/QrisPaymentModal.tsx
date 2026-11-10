@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   RefreshCw,
   Sparkles,
+  Printer,
+  FileText,
 } from 'lucide-react';
 import { Order, formatRupiah } from '@/lib/types';
 import {
@@ -275,7 +277,10 @@ export default function QrisPaymentModal({
                   NMID: {QRIS_NMID} &bull; A01
                 </p>
                 <p className="text-[11px] font-medium text-slate-600 mt-0.5">
-                  {currentOrder.division || 'Bagian Umum'} &bull; {currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} &bull; Size {currentOrder.size} ({currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})
+                  {currentOrder.division || 'Bagian Umum'} &bull;{' '}
+                  {currentOrder.items && currentOrder.items.length > 0
+                    ? `${currentOrder.totalQty || currentOrder.items.length} pcs Jersey (${currentOrder.items.length} Varian)`
+                    : `${currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} • Size ${currentOrder.size} (${currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})`}
                 </p>
               </div>
 
@@ -424,7 +429,9 @@ export default function QrisPaymentModal({
                       Total Tagihan Jersey
                     </span>
                     <p className="text-xs text-slate-600 font-medium">
-                      {currentOrder.size} &bull; Lengan {currentOrder.sleeve === 'panjang' ? 'Panjang' : 'Pendek'}
+                      {currentOrder.items && currentOrder.items.length > 0
+                        ? `${currentOrder.totalQty || currentOrder.items.length} Pcs Jersey`
+                        : `${currentOrder.size} • Lengan ${currentOrder.sleeve === 'panjang' ? 'Panjang' : 'Pendek'}`}
                     </p>
                   </div>
                   <div className="text-right">
@@ -524,10 +531,26 @@ export default function QrisPaymentModal({
                   <span className="font-mono text-slate-800">{currentOrder.phone}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="text-slate-500 text-xs">Model &amp; Ukuran</span>
-                  <span className="font-medium text-slate-800">
-                    {currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} &bull; Size {currentOrder.size} ({currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})
-                  </span>
+                  <span className="text-slate-500 text-xs">Rincian Item</span>
+                  <div className="font-medium text-slate-800 text-right text-xs">
+                    {currentOrder.items && currentOrder.items.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {currentOrder.items.map((it, idx) => (
+                          <div key={idx}>
+                            {it.quantity}x {it.color === 'maroon' ? 'Maroon' : 'Putih'} (
+                            {it.genderCut === 'ladies' ? 'Ladies' : 'Men'} {it.size} -{' '}
+                            {it.sleeve === 'panjang' ? 'Pjg' : 'Pdk'})
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span>
+                        {currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} &bull; Size{' '}
+                        {currentOrder.size} (
+                        {currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span className="text-slate-500 text-xs">Total Pembayaran</span>
@@ -542,6 +565,18 @@ export default function QrisPaymentModal({
                   </span>
                 </div>
               </div>
+
+              {/* Tombol Cetak PDF Bukti Pembayaran */}
+              <a
+                href={`/invoice/${currentOrder.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-950 to-blue-900 hover:from-blue-900 hover:to-indigo-950 text-white font-extrabold py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-md shadow-blue-950/20 hover:scale-[1.01] active:scale-[0.99]"
+              >
+                <Printer className="w-4 h-4 text-amber-300" />
+                <span>Buka &amp; Cetak Bukti Pembayaran PDF Resmi</span>
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+              </a>
 
               {/* Kirim Nota ke Pemesan & Admin */}
               <div className="bg-emerald-50/90 border border-emerald-300 rounded-2xl p-3.5">

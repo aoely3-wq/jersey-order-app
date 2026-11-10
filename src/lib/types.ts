@@ -1,5 +1,7 @@
 export type GenderCut = 'men' | 'ladies';
 
+export type JerseyColor = 'putih' | 'maroon';
+
 export type JerseySize =
   | 'XS'
   | 'S'
@@ -27,22 +29,40 @@ export const DIVISIONS = [
 
 export type Division = (typeof DIVISIONS)[number] | string;
 
+export interface CartItem {
+  id: string;
+  color: JerseyColor;
+  genderCut: GenderCut;
+  size: JerseySize;
+  sleeve: SleeveType;
+  quantity: number;
+  basePrice: number;
+  sleeveExtra: number;
+  sizeExtra: number;
+  unitPrice: number;
+  subtotal: number;
+}
+
 export interface Order {
   id: string;
   name: string;
   division: string;
-  genderCut: GenderCut;
+  genderCut?: GenderCut;
   phone: string;
-  size: JerseySize;
-  sleeve: SleeveType;
-  basePrice: number;
-  sleeveExtra: number;
-  sizeExtra: number;
+  size?: JerseySize;
+  sleeve?: SleeveType;
+  color?: JerseyColor;
+  items?: CartItem[];
+  totalQty?: number;
+  basePrice?: number;
+  sleeveExtra?: number;
+  sizeExtra?: number;
   totalPrice: number;
   status: OrderStatus;
   createdAt: string;
   paidAt?: string;
   notes?: string;
+  pdfInvoiceUrl?: string;
 }
 
 export interface PriceBreakdown {

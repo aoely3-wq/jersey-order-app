@@ -43,14 +43,22 @@ export async function createDokuCheckout(
       currency: 'IDR',
       callback_url: callbackUrl || undefined,
       auto_redirect: true,
-      line_items: [
-        {
-          id: `JERSEY-${order.size}-${order.sleeve}`,
-          name: `Jersey Cual DJPb Babel (${order.size} - Lengan ${order.sleeve === 'panjang' ? 'Panjang' : 'Pendek'})`,
-          price: order.totalPrice,
-          quantity: 1,
-        },
-      ],
+      line_items:
+        order.items && order.items.length > 0
+          ? order.items.map((it, idx) => ({
+              id: it.id || `ITEM-${idx + 1}`,
+              name: `Jersey ${it.color === 'maroon' ? 'Maroon' : 'Putih'} (${it.genderCut === 'ladies' ? 'Ladies' : 'Men'} ${it.size} - ${it.sleeve === 'panjang' ? 'Pjg' : 'Pdk'})`,
+              price: it.unitPrice,
+              quantity: it.quantity || 1,
+            }))
+          : [
+              {
+                id: `JERSEY-${order.size || 'STD'}-${order.sleeve || 'pendek'}`,
+                name: `Jersey Cual DJPb Babel (${order.size || 'L'} - Lengan ${order.sleeve === 'panjang' ? 'Panjang' : 'Pendek'})`,
+                price: order.totalPrice,
+                quantity: 1,
+              },
+            ],
     },
     payment: {
       payment_due_date: 60, // 60 menit batas pembayaran

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="id" className="h-full">
       <body className="font-sans min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased">
-        <Navbar />
+        <Suspense fallback={<div className="h-18 bg-white border-b border-slate-200" />}>
+          <Navbar />
+        </Suspense>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
           <div className="max-w-4xl mx-auto px-4 space-y-1">
