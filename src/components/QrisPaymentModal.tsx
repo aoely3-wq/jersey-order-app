@@ -432,7 +432,7 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* TAB 1: QRIS DOKU RESMI (JERSEY KANWIL DJPB BABEL) */}
+          {/* TAB 1: QRIS DINAMIS DOKU (iframe checkout resmi) */}
           {/* ============================================================== */}
           {!isPaid && activeTab === 'qris' && (
             <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white mb-4 animate-in fade-in duration-200">
@@ -449,7 +449,7 @@ export default function QrisPaymentModal({
                 </div>
               </div>
 
-              {/* Merchant Details */}
+              {/* Merchant + Order Info */}
               <div className="px-4 pt-2.5 pb-2 text-center border-b border-slate-100 bg-slate-50/60">
                 <p className="text-xs uppercase font-black tracking-wider text-[#002B5B]">
                   {QRIS_MERCHANT_NAME}
@@ -465,140 +465,119 @@ export default function QrisPaymentModal({
                 </p>
               </div>
 
-              {/* Mode Tampilan Switcher (Dinamis Otomatis vs Poster Asli) */}
-              <div className="flex items-center justify-center p-1.5 bg-slate-100/80 border-b border-slate-100 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setQrMode('dynamic')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    qrMode === 'dynamic'
-                      ? 'bg-white text-[#002B5B] shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>QR Nominal Pas</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setQrMode('poster')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    qrMode === 'poster'
-                      ? 'bg-white text-[#002B5B] shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5 text-[#002B5B]" />
-                  <span>Poster Resmi DOKU</span>
-                </button>
-              </div>
+              {/* ---- DOKU CHECKOUT EMBEDDED (QRIS DINAMIS ASLI) ---- */}
+              {isLoadingDoku ? (
+                <div className="p-8 flex flex-col items-center justify-center gap-3 bg-white">
+                  <div className="w-6 h-6 border-2 border-blue-900 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-semibold text-slate-700">Memuat QRIS Dinamis DOKU...</span>
+                </div>
+              ) : dokuUrl ? (
+                <>
+                  {/* iframe ke DOKU Checkout — berisi QRIS dinamis asli + pilihan VA */}
+                  <div className="relative bg-white">
+                    <iframe
+                      src={dokuUrl}
+                      title="DOKU QRIS Payment"
+                      className="w-full border-0"
+                      style={{ height: '540px' }}
+                      allow="payment"
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+                    />
+                  </div>
+                  {/* Fallback: tombol buka jika iframe diblokir CSP browser */}
+                  <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
+                    <p className="text-[10px] text-slate-500 text-center">
+                      Jika halaman QRIS di atas tidak tampil, klik untuk membuka di tab baru:
+                    </p>
+                    <a
+                      href={dokuUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white font-extrabold py-2.5 px-4 rounded-xl text-xs shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>Buka QRIS DOKU (Tab Baru) &rarr;</span>
+                      <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                    </a>
+                  </div>
 
-              {/* QR Code Canvas */}
-              <div className="p-4 flex flex-col items-center justify-center bg-white">
-                {qrMode === 'dynamic' ? (
-                  <>
-                    <div className="p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-inner">
-                      <QRCodeSVG
-                        id="dynamic-qris-svg"
-                        value={dynamicQrisPayload}
-                        size={195}
-                        level="M"
-                        includeMargin={false}
-                      />
-                    </div>
-                    <div className="mt-2.5 text-center">
-                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700 mb-1">
-                        <Sparkles className="w-3 h-3 text-emerald-600" />
-                        <span>Nominal Terkunci Otomatis Saat Scan</span>
-                      </div>
-                      <p className="text-xs text-slate-500 font-medium">Total Nominal Transfer:</p>
-                      <p className="text-2xl font-black text-slate-900 tracking-tight">
-                        {formatRupiah(currentOrder.totalPrice)}
-                      </p>
-                    </div>
-
-                    {/* Tombol Download Gambar QR */}
+                  {/* Konfirmasi Manual setelah bayar */}
+                  <div className="px-4 pb-4 pt-2 bg-white border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={handleDownloadQR}
-                      disabled={downloading}
-                      className="mt-3.5 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#002B5B] via-[#003875] to-[#001D3D] hover:from-[#001D3D] hover:to-[#002B5B] text-white font-extrabold text-xs shadow-md shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                      onClick={handleAdminMarkPaid}
+                      disabled={isSimulating}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-4 rounded-xl shadow-md text-xs sm:text-sm transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50"
                     >
-                      <Download className="w-4 h-4 text-amber-300" />
-                      <span>{downloading ? 'Menyiapkan File...' : 'Download Gambar QR (PNG)'}</span>
+                      {isSimulating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Memverifikasi Pembayaran...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                          <span>Sudah Bayar — Konfirmasi &amp; Cetak Faktur PDF</span>
+                        </>
+                      )}
                     </button>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <div className="relative w-52 h-72 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
-                      <Image
-                        src="/qris-doku.png"
-                        alt="Poster QRIS DOKU Jersey Kanwil DJPb Babel"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
-                      <button
-                        type="button"
-                        onClick={handleDownloadQR}
-                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-[#002B5B] hover:bg-[#001D3D] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Download Poster DOKU (PNG)</span>
-                      </button>
-                      <a
-                        href="/qris-doku.png"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-medium hover:underline mt-0.5"
-                      >
-                        <Eye className="w-3 h-3" />
-                        <span>Buka Poster HD Ukuran Penuh &rarr;</span>
-                      </a>
-                    </div>
+                    <p className="text-[10px] text-slate-500 text-center mt-1.5 leading-relaxed">
+                      Konfirmasi otomatis via Webhook DOKU. Tekan tombol di atas setelah scan QRIS berhasil untuk langsung mencetak faktur PDF.
+                    </p>
                   </div>
-                )}
-
-                {/* Direct Link to DOKU Checkout */}
-                {dokuUrl && (
-                  <a
-                    href={dokuUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3.5 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900 to-indigo-950 hover:from-blue-950 hover:to-slate-950 text-white font-extrabold py-3 px-4 rounded-xl text-xs shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]"
-                  >
-                    <CreditCard className="w-4 h-4 text-amber-300" />
-                    <span>Buka Halaman DOKU Checkout (Layar Penuh) &rarr;</span>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-                  </a>
-                )}
-
-                {/* Tombol Konfirmasi Selesai Bayar Langsung */}
-                <div className="w-full mt-3 pt-3 border-t border-slate-200/80">
+                </>
+              ) : (
+                /* Fallback: QRIS statis jika DOKU URL gagal dimuat */
+                <div className="p-4 flex flex-col items-center justify-center bg-white">
+                  <div className="p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-inner">
+                    <QRCodeSVG
+                      id="dynamic-qris-svg"
+                      value={dynamicQrisPayload}
+                      size={195}
+                      level="M"
+                      includeMargin={false}
+                    />
+                  </div>
+                  <div className="mt-2.5 text-center">
+                    <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-700 mb-1">
+                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                      <span>QRIS Cadangan — Koneksi DOKU bermasalah</span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">Total Nominal Transfer:</p>
+                    <p className="text-2xl font-black text-slate-900 tracking-tight">
+                      {formatRupiah(currentOrder.totalPrice)}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    onClick={handleAdminMarkPaid}
-                    disabled={isSimulating}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-4 rounded-xl shadow-md text-xs sm:text-sm transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                    onClick={loadDokuPayment}
+                    className="mt-3 inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                   >
-                    {isSimulating ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Memverifikasi Pembayaran...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                        <span>Saya Sudah Selesai Bayar (Konfirmasi Lunas)</span>
-                      </>
-                    )}
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Muat Ulang QRIS DOKU</span>
                   </button>
-                  <p className="text-[10px] text-slate-500 text-center mt-1.5 leading-relaxed">
-                    Sistem otomatis mendeteksi lunas via Webhook DOKU. Anda juga dapat menekan tombol di atas setelah transfer berhasil untuk langsung mencetak Bukti Faktur PDF.
-                  </p>
+                  <div className="w-full mt-3 pt-3 border-t border-slate-200/80">
+                    <button
+                      type="button"
+                      onClick={handleAdminMarkPaid}
+                      disabled={isSimulating}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-4 rounded-xl shadow-md text-xs sm:text-sm transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                    >
+                      {isSimulating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Memverifikasi Pembayaran...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                          <span>Saya Sudah Selesai Bayar (Konfirmasi Lunas)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Bottom Instructions */}
               <div className="bg-slate-50 px-4 py-2.5 text-center border-t border-slate-100">
