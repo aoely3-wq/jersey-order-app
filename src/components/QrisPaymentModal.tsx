@@ -53,6 +53,7 @@ export default function QrisPaymentModal({
   const [errorMsg, setErrorMsg] = useState('');
   const [dokuUrl, setDokuUrl] = useState<string | null>(null);
   const [isLoadingDoku, setIsLoadingDoku] = useState(false);
+  const [dokuError, setDokuError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'qris' | 'va'>('qris');
   const [qrMode, setQrMode] = useState<'dynamic' | 'poster'>('dynamic');
 
@@ -60,20 +61,32 @@ export default function QrisPaymentModal({
     setCurrentOrder(order);
   }, [order]);
 
+  const loadDokuPayment = async () => {
+    if (currentOrder.status === 'PAID') return;
+    setIsLoadingDoku(true);
+    setDokuError(null);
+    try {
+      const res = await fetch(`/api/orders/${currentOrder.id}/doku`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && (data.data?.payment_url || data.data?.redirect_url)) {
+        setDokuUrl(data.data.payment_url || data.data.redirect_url);
+        setDokuError(null);
+      } else {
+        setDokuError(data.message || 'Koneksi DOKU belum tersedia.');
+      }
+    } catch (err) {
+      console.error('DOKU VA fetch error:', err);
+      setDokuError('Terjadi gangguan jaringan saat menghubungkan ke DOKU.');
+    } finally {
+      setIsLoadingDoku(false);
+    }
+  };
+
   // Ambil URL pembayaran resmi DOKU untuk Virtual Account Multi-Bank
   useEffect(() => {
-    if (!isOpen || currentOrder.status === 'PAID') return;
-
-    setIsLoadingDoku(true);
-    fetch(`/api/orders/${currentOrder.id}/doku`, { method: 'POST' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && (data.data?.payment_url || data.data?.redirect_url)) {
-          setDokuUrl(data.data.payment_url || data.data.redirect_url);
-        }
-      })
-      .catch((err) => console.log('DOKU VA fetch error:', err))
-      .finally(() => setIsLoadingDoku(false));
+    if (isOpen && currentOrder.status !== 'PAID') {
+      loadDokuPayment();
+    }
   }, [isOpen, currentOrder.id, currentOrder.status]);
 
   // Countdown timer
@@ -402,9 +415,9 @@ export default function QrisPaymentModal({
 
                 {/* Tombol Buka DOKU Checkout VA */}
                 {isLoadingDoku ? (
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center flex items-center justify-center gap-2 text-xs text-slate-600">
-                    <div className="w-4 h-4 border-2 border-blue-900 border-t-transparent rounded-full animate-spin" />
-                    <span>Menyiapkan Virtual Account Bank...</span>
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center gap-2 text-xs text-slate-600">
+                    <div className="w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin" />
+                    <span className="font-semibold text-slate-700">Menyiapkan Virtual Account Bank via DOKU...</span>
                   </div>
                 ) : dokuUrl ? (
                   <a
@@ -418,8 +431,39 @@ export default function QrisPaymentModal({
                     <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-80" />
                   </a>
                 ) : (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
-                    <span>Sedang memuat koneksi ke DOKU. Silakan klik tombol di bawah untuk mencoba kembali.</span>
+                  <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl space-y-2.5">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="text-xs text-amber-900 leading-relaxed">
+                        <p className="font-bold">
+                          {dokuError ? dokuError : 'Koneksi Virtual Account DOKU belum aktif.'}
+                        </p>
+                        {dokuError?.includes('belum dikonfigurasi') && (
+                          <p className="text-[11px] text-amber-800 mt-1">
+                            Environment Variables DOKU (<code className="bg-amber-100 px-1 py-0.5 rounded text-amber-950 font-mono text-[10px]">DOKU_CLIENT_ID</code> &amp; <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-950 font-mono text-[10px]">DOKU_SECRET_KEY</code>) perlu ditambahkan di Settings Vercel.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={loadDokuPayment}
+                        className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <span>🔄 Coba Muat Ulang Virtual Account</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('qris')}
+                        className="w-full py-2.5 px-3 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-amber-300" />
+                        <span>⚡ Bayar via QRIS DANA (Bisa Semua Bank &amp; E-Wallet)</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
