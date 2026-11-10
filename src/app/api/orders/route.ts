@@ -49,8 +49,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: newOrder }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to create order:', error);
-    return NextResponse.json({ success: false, message: 'Gagal membuat pesanan' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: error?.message || 'Gagal membuat pesanan' },
+      { status: 500 }
+    );
   }
 }
