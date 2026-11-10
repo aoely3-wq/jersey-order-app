@@ -79,11 +79,11 @@ export default function QrisPaymentModal({
         setCurrentOrder(data.data);
         onPaymentSuccess(data.data);
       } else {
-        setCheckFeedback('Belum terdeteksi di server DOKU. Jika sudah transfer, klik tombol hijau di bawah untuk konfirmasi lunas.');
-        setTimeout(() => setCheckFeedback(null), 6000);
+        setCheckFeedback('prompt_confirm');
       }
     } catch (err) {
       console.error('Check status error:', err);
+      setCheckFeedback('prompt_confirm');
     } finally {
       setIsCheckingStatus(false);
     }
@@ -365,8 +365,34 @@ export default function QrisPaymentModal({
               </div>
 
               {checkFeedback && (
-                <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-blue-900 leading-snug animate-in fade-in duration-200">
-                  {checkFeedback}
+                <div className="p-3.5 rounded-2xl bg-amber-50/95 border border-amber-300 text-xs text-amber-950 space-y-2.5 animate-in fade-in duration-200 shadow-xs">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-extrabold text-amber-900">Transaksi Siap Dikonfirmasi</p>
+                      <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                        Jika Anda telah scan QRIS atau transfer melalui m-Banking / E-Wallet, silakan klik tombol di bawah untuk langsung menerbitkan bukti pembayaran resmi &amp; faktur PDF:
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAdminMarkPaid}
+                    disabled={isSimulating}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSimulating ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Memverifikasi Pelunasan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>✓ Konfirmasi Pelunasan &amp; Cetak Faktur PDF &rarr;</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               )}
             </div>
