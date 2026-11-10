@@ -74,11 +74,11 @@ ${statusUrl}
 Data pesanan Anda sudah otomatis masuk ke dalam rekapitulasi vendor konveksi untuk proses produksi seragam.
 
 Terima kasih atas partisipasinya! 🙏
-_Aulia NAWASENA • Panitia Jersey Kanwil DJPb Bangka Belitung_`;
+_Aulia NAWASENA • Kanwil DJPb Kepulauan Bangka Belitung_`;
 }
 
 /**
- * Nomor WhatsApp Admin / Panitia (Aulia Rahim)
+ * Nomor WhatsApp Pengelola / Admin (Aulia Rahim)
  */
 export const ADMIN_PHONE = '082136105904';
 

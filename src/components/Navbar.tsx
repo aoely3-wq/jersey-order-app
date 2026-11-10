@@ -62,7 +62,7 @@ export default function Navbar() {
           {/* Menu Khusus Admin (Diberi Gembok) */}
           <Link
             href="/rekap"
-            title="Khusus Panitia / Admin"
+            title="Khusus Admin / Rekap"
             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all border ${
               pathname === '/rekap'
                 ? 'bg-[#D4AF37]/20 text-[#002B5B] border-[#D4AF37] shadow-xs'

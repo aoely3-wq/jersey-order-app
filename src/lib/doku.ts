@@ -160,3 +160,80 @@ export function verifyDokuSignature(
     return false;
   }
 }
+
+export interface DokuOrderStatusResult {
+  isPaid: boolean;
+  status: string;
+  raw?: any;
+}
+
+/**
+ * Pengecekan aktif status pembayaran langsung ke DOKU API Server.
+ * Endpoint: GET /orders/v1/status/{invoice_number}
+ * Digunakan untuk auto-konfirmasi real-time tanpa hanya bergantung pada Webhook.
+ */
+export async function checkDokuOrderStatus(
+  invoiceNumber: string
+): Promise<DokuOrderStatusResult> {
+  if (!isDokuConfigured()) {
+    return { isPaid: false, status: 'NOT_CONFIGURED' };
+  }
+
+  const clientId = process.env.DOKU_CLIENT_ID?.trim() || '';
+  const secretKey = process.env.DOKU_SECRET_KEY?.trim() || '';
+  const baseUrl = getDokuBaseUrl();
+  const targetPath = `/orders/v1/status/${invoiceNumber}`;
+
+  const requestId = crypto.randomUUID();
+  const requestTimestamp = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+  // Khusus GET request di DOKU: stringToSign tidak menyertakan Digest
+  const stringToSign =
+    `Client-Id:${clientId}\n` +
+    `Request-Id:${requestId}\n` +
+    `Request-Timestamp:${requestTimestamp}\n` +
+    `Request-Target:${targetPath}`;
+
+  const signature =
+    'HMACSHA256=' +
+    crypto.createHmac('sha256', secretKey).update(stringToSign).digest('base64');
+
+  try {
+    const response = await fetch(`${baseUrl}${targetPath}`, {
+      method: 'GET',
+      headers: {
+        'Client-Id': clientId,
+        'Request-Id': requestId,
+        'Request-Timestamp': requestTimestamp,
+        Signature: signature,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      console.warn(`[DOKU Check Status] HTTP ${response.status} for invoice ${invoiceNumber}`);
+      return { isPaid: false, status: `HTTP_${response.status}` };
+    }
+
+    const data = await response.json();
+    const transactionStatus = (data?.transaction?.status || '').toUpperCase();
+    const orderStatus = (data?.order?.status || '').toUpperCase();
+
+    // DOKU mengindikasikan sukses di transaction.status === 'SUCCESS' atau 'SETTLED'
+    // atau order.status === 'PAID' / 'SUCCESS'
+    const isPaid =
+      transactionStatus === 'SUCCESS' ||
+      transactionStatus === 'SETTLED' ||
+      orderStatus === 'PAID' ||
+      orderStatus === 'SUCCESS';
+
+    return {
+      isPaid,
+      status: transactionStatus || orderStatus || 'PENDING',
+      raw: data,
+    };
+  } catch (err) {
+    console.error(`[DOKU Check Status] Error fetching status for ${invoiceNumber}:`, err);
+    return { isPaid: false, status: 'ERROR' };
+  }
+}

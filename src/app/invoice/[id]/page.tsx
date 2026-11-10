@@ -203,7 +203,7 @@ function InvoiceContent() {
                 KANWIL DJPb PROVINSI BANGKA BELITUNG
               </h1>
               <p className="text-xs text-blue-200 mt-0.5">
-                Indonesian Treasury (InTress) &bull; Panitia Pengadaan Jersey Kantor 2026
+                Indonesian Treasury (InTress) &bull; Pengadaan Jersey Kantor 2026
               </p>
             </div>
 
@@ -410,7 +410,7 @@ function InvoiceContent() {
                   <span>Tersinkronisasi ke Google Sheets</span>
                 </p>
                 <p className="text-[10px] text-slate-500 mt-0.5">
-                  Faktur resmi sah diterbitkan oleh sistem digital panitia.
+                  Faktur resmi sah diterbitkan oleh sistem digital pemesanan.
                 </p>
               </div>
 
@@ -428,7 +428,7 @@ function InvoiceContent() {
           {/* Official Signoff Footer */}
           <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 text-xs text-slate-500">
             <div>
-              <p className="font-bold text-slate-700">Panitia Pengadaan Jersey Cual 2026</p>
+              <p className="font-bold text-slate-700">Pengadaan Jersey Cual DJPb Babel 2026</p>
               <p className="text-[11px]">Kanwil Ditjen Perbendaharaan Provinsi Kepulauan Bangka Belitung</p>
               <p className="text-[10px] mt-1 text-slate-400">
                 Dokumen ini merupakan bukti sah transaksi digital dan dapat disimpan sebagai arsip pribadi.

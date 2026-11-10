@@ -60,6 +60,34 @@ export default function QrisPaymentModal({
   const [activeTab, setActiveTab] = useState<'qris' | 'va'>('qris');
   const [qrMode, setQrMode] = useState<'dynamic' | 'poster'>('dynamic');
   const [downloading, setDownloading] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [checkFeedback, setCheckFeedback] = useState<string | null>(null);
+
+  const checkPaymentStatusNow = async () => {
+    if (currentOrder.status === 'PAID') return;
+    setIsCheckingStatus(true);
+    setCheckFeedback(null);
+    try {
+      const res = await fetch(`/api/orders/${currentOrder.id}/check`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success && data.isPaid && data.data) {
+        setCurrentOrder(data.data);
+        onPaymentSuccess(data.data);
+      } else if (data.data?.status === 'PAID') {
+        setCurrentOrder(data.data);
+        onPaymentSuccess(data.data);
+      } else {
+        setCheckFeedback('Belum terdeteksi di server DOKU. Jika sudah transfer, klik tombol hijau di bawah untuk konfirmasi lunas.');
+        setTimeout(() => setCheckFeedback(null), 6000);
+      }
+    } catch (err) {
+      console.error('Check status error:', err);
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
 
   const handleDownloadQR = () => {
     if (qrMode === 'poster') {
@@ -199,7 +227,7 @@ export default function QrisPaymentModal({
     }
   }, [isOpen, currentOrder.id, currentOrder.status]);
 
-  // Polling otomatis setiap 4 detik untuk update status real-time saat dibayar oleh pembeli
+  // Polling otomatis setiap 3 detik untuk update status real-time saat dibayar oleh pembeli
   useEffect(() => {
     if (!isOpen || currentOrder.status === 'PAID') return;
 
@@ -214,7 +242,7 @@ export default function QrisPaymentModal({
       } catch {
         // silent catch
       }
-    }, 4000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [isOpen, currentOrder.id, currentOrder.status, onPaymentSuccess]);
@@ -310,18 +338,37 @@ export default function QrisPaymentModal({
               </p>
             </div>
           ) : (
-            <div className="flex items-center justify-between px-3.5 py-2 mb-4 rounded-xl bg-amber-50 border border-amber-200">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                </span>
-                <span className="text-xs font-semibold text-amber-800">Menunggu Pembayaran</span>
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                  </span>
+                  <span className="text-xs font-semibold text-amber-800">Menunggu Pembayaran</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={checkPaymentStatusNow}
+                    disabled={isCheckingStatus}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 text-[11px] font-bold text-amber-900 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isCheckingStatus ? 'animate-spin text-blue-900' : 'text-amber-700'}`} />
+                    <span>{isCheckingStatus ? 'Mengecek...' : 'Cek Status'}</span>
+                  </button>
+                  <div className="flex items-center gap-1 text-xs font-mono font-medium text-amber-700">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{formatTimer(timeLeft)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-amber-700">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{formatTimer(timeLeft)}</span>
-              </div>
+
+              {checkFeedback && (
+                <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-blue-900 leading-snug animate-in fade-in duration-200">
+                  {checkFeedback}
+                </div>
+              )}
             </div>
           )}
 
@@ -795,7 +842,7 @@ export default function QrisPaymentModal({
                     Aksi Khusus Admin
                   </h5>
                   <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                    Tandai pesanan ini lunas secara manual jika pemesan membayar tunai langsung ke panitia:
+                    Tandai pesanan ini lunas secara manual jika pemesan membayar tunai langsung:
                   </p>
                 </div>
               </div>

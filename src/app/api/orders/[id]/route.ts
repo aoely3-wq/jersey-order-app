@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById, updateOrderStatus, deleteOrder } from '@/lib/orders';
 import { OrderStatus } from '@/lib/types';
 import { sendWhatsAppNotification } from '@/lib/whatsapp';
+import { checkDokuOrderStatus, isDokuConfigured } from '@/lib/doku';
 
 export async function GET(
   _req: NextRequest,
@@ -9,10 +10,33 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const order = await getOrderById(id);
+    let order = await getOrderById(id);
     if (!order) {
       return NextResponse.json({ success: false, message: 'Pesanan tidak ditemukan' }, { status: 404 });
     }
+
+    // Jika pesanan masih PENDING, lakukan active polling langsung ke DOKU
+    if (order.status === 'PENDING' && isDokuConfigured()) {
+      try {
+        const dokuCheck = await checkDokuOrderStatus(id);
+        if (dokuCheck.isPaid) {
+          console.log(`[DOKU Active Polling]: Invoice ${id} terverifikasi LUNAS di DOKU! Memperbarui status...`);
+          const updated = await updateOrderStatus(id, 'PAID');
+          if (updated) {
+            order = updated;
+            // Kirim notifikasi WA otomatis dengan tautan invoice PDF
+            try {
+              await sendWhatsAppNotification(updated);
+            } catch (waErr) {
+              console.error('[DOKU Active Polling] Gagal mengirim WA:', waErr);
+            }
+          }
+        }
+      } catch (checkErr) {
+        console.warn(`[DOKU Active Polling] Gagal memeriksa status DOKU untuk ${id}:`, checkErr);
+      }
+    }
+
     return NextResponse.json({ success: true, data: order });
   } catch (error) {
     console.error('Failed to get order:', error);

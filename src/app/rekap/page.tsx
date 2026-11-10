@@ -351,7 +351,7 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
             <div className="w-14 h-14 rounded-2xl bg-white/10 text-amber-300 border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-inner">
               <Lock className="w-7 h-7" />
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight">Portal Panitia &amp; Admin</h1>
+            <h1 className="text-xl font-extrabold tracking-tight">Portal Rekap &amp; Admin</h1>
             <p className="text-xs text-blue-200 mt-1">
               Kanwil Ditjen Perbendaharaan Provinsi Kepulauan Bangka Belitung
             </p>
@@ -429,7 +429,7 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
           <span className="font-bold">Mode Administrator Aktif:</span>
           <span className="text-blue-200 hidden sm:inline">
-            Akses Penuh Panitia Pengadaan Jersey Kanwil DJPb Babel
+            Akses Pengelola Pengadaan Jersey Kanwil DJPb Babel
           </span>
         </div>
         <button
@@ -447,7 +447,7 @@ XS: ${sizeMatrix.totalPerSize.XS || 0} | S: ${sizeMatrix.totalPerSize.S} | M: ${
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-xs font-bold border border-blue-200">
               <Shirt className="w-3.5 h-3.5 text-blue-700" />
-              Panitia Pengadaan Seragam
+              Pengelola Pengadaan Seragam
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
               Kanwil DJPb Babel

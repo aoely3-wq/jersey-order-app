@@ -34,7 +34,27 @@ export async function fetchOrdersFromSheet(): Promise<Order[] | null> {
 
     const json = await res.json();
     if (json.success && Array.isArray(json.data)) {
-      return json.data as Order[];
+      const orders = (json.data as any[]).map((raw) => {
+        let division = raw.division || '';
+        let notes = raw.notes || undefined;
+
+        // Ekstrak tag [DIV:...] jika Google Sheet menyimpan division di dalam catatan
+        if (notes && typeof notes === 'string') {
+          const match = notes.match(/\[DIV:(.+?)\]/);
+          if (match) {
+            division = match[1].trim();
+            notes = notes.replace(/\[DIV:(.+?)\]\s*/, '').trim() || undefined;
+          }
+        }
+
+        return {
+          ...raw,
+          division: division || 'Bagian Umum',
+          notes,
+        } as Order;
+      });
+
+      return orders;
     }
     return null;
   } catch (error) {
@@ -51,10 +71,22 @@ export async function saveOrderToSheet(order: Order): Promise<boolean> {
   if (!url) return false;
 
   try {
+    const division = order.division?.trim() || 'Bagian Umum';
+    let sheetNotes = order.notes?.trim() || '';
+    if (!sheetNotes.includes('[DIV:')) {
+      sheetNotes = `[DIV:${division}]${sheetNotes ? ` ${sheetNotes}` : ''}`;
+    }
+
+    const orderPayload = {
+      ...order,
+      division,
+      notes: sheetNotes,
+    };
+
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'create', order }),
+      body: JSON.stringify({ action: 'create', order: orderPayload }),
       redirect: 'follow',
     });
 
@@ -124,10 +156,23 @@ export async function batchSyncToSheet(orders: Order[]): Promise<{ success: bool
   if (!url) return { success: false };
 
   try {
+    const syncedOrders = orders.map((o) => {
+      const division = o.division?.trim() || 'Bagian Umum';
+      let sheetNotes = o.notes?.trim() || '';
+      if (!sheetNotes.includes('[DIV:')) {
+        sheetNotes = `[DIV:${division}]${sheetNotes ? ` ${sheetNotes}` : ''}`;
+      }
+      return {
+        ...o,
+        division,
+        notes: sheetNotes,
+      };
+    });
+
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'batchSync', orders }),
+      body: JSON.stringify({ action: 'batchSync', orders: syncedOrders }),
       redirect: 'follow',
     });
 
