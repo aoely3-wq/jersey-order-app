@@ -28,7 +28,31 @@ export async function POST(
     const origin = req.nextUrl.origin || 'http://localhost:3000';
     const callbackUrl = `${origin}/invoice/${order.id}`;
 
-    const dokuData = await createDokuCheckout(order, callbackUrl);
+    // Cek apakah ada request spesifik untuk channel VA atau QRIS
+    let paymentMethodTypes: string[] = ['QRIS']; // Default: QRIS langsung agar barcode tampil pertama
+    try {
+      const body = await req.json();
+      if (body.method === 'va') {
+        paymentMethodTypes = [
+          'VIRTUAL_ACCOUNT_BCA',
+          'VIRTUAL_ACCOUNT_BANK_MANDIRI',
+          'VIRTUAL_ACCOUNT_BRI',
+          'VIRTUAL_ACCOUNT_BNI',
+          'VIRTUAL_ACCOUNT_BSI',
+          'VIRTUAL_ACCOUNT_PERMATA',
+        ];
+      } else if (body.method === 'all') {
+        paymentMethodTypes = [];
+      }
+    } catch {
+      // Body kosong atau bukan JSON -> default ['QRIS']
+    }
+
+    const dokuData = await createDokuCheckout(
+      order,
+      callbackUrl,
+      paymentMethodTypes.length > 0 ? paymentMethodTypes : undefined
+    );
 
     return NextResponse.json({
       success: true,

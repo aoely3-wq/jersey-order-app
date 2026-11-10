@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateOrderStatus, getOrderById } from '@/lib/orders';
-import { sendWhatsAppNotification } from '@/lib/whatsapp';
+import { sendWhatsAppNotification, sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
 
 export async function POST(
   _req: NextRequest,
@@ -22,8 +22,12 @@ export async function POST(
       return NextResponse.json({ success: false, message: 'Gagal memperbarui status' }, { status: 500 });
     }
 
-    // Trigger WhatsApp notification (otomatis kirim jika token ada, atau mock log)
+    // Trigger WhatsApp notifications (teks + dokumen PDF invoice)
     const waResult = await sendWhatsAppNotification(updated);
+    // Kirim invoice PDF sebagai dokumen WA (non-blocking, error tidak menggagalkan response)
+    sendWhatsAppInvoicePDF(updated).catch((err) =>
+      console.error('[Pay] WA PDF send failed:', err)
+    );
 
     return NextResponse.json({
       success: true,

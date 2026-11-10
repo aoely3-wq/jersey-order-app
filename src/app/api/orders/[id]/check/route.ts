@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById, updateOrderStatus } from '@/lib/orders';
 import { checkDokuOrderStatus, isDokuConfigured } from '@/lib/doku';
-import { sendWhatsAppNotification } from '@/lib/whatsapp';
+import { sendWhatsAppNotification, sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
 
 export async function POST(
   _req: NextRequest,
@@ -44,6 +44,9 @@ export async function POST(
         order = updated;
         try {
           await sendWhatsAppNotification(updated);
+          sendWhatsAppInvoicePDF(updated).catch((err) =>
+            console.error('[Check DOKU Route] Failed to send WA PDF:', err)
+          );
         } catch (waErr) {
           console.error('[Check DOKU Route] Failed to send WA:', waErr);
         }

@@ -175,8 +175,18 @@ function InvoiceContent() {
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#002B5B] hover:bg-[#001D3D] text-white text-xs font-black transition-all shadow-md shadow-blue-950/25 hover:scale-105 active:scale-95 cursor-pointer"
             >
               <Download className="w-4 h-4 text-[#D4AF37]" />
-              <span>Download PDF</span>
+              <span>Cetak / Simpan PDF</span>
             </button>
+
+            <a
+              href={`/api/invoice/${orderId}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black transition-all shadow-md shadow-emerald-900/25 hover:scale-105 active:scale-95"
+            >
+              <FileText className="w-4 h-4 text-emerald-200" />
+              <span>Download PDF Binary</span>
+            </a>
 
             <button
               type="button"

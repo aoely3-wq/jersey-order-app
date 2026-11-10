@@ -24,7 +24,8 @@ export interface DokuCheckoutResponse {
 
 export async function createDokuCheckout(
   order: Order,
-  callbackUrl?: string
+  callbackUrl?: string,
+  paymentMethodTypes?: string[]
 ): Promise<DokuCheckoutResponse> {
   const clientId = process.env.DOKU_CLIENT_ID?.trim() || '';
   const secretKey = process.env.DOKU_SECRET_KEY?.trim() || '';
@@ -62,6 +63,10 @@ export async function createDokuCheckout(
     },
     payment: {
       payment_due_date: 60, // 60 menit batas pembayaran
+      payment_method_types:
+        paymentMethodTypes && paymentMethodTypes.length > 0
+          ? paymentMethodTypes
+          : ['QRIS'], // Wajib default 'QRIS' agar DOKU langsung membuka layar barcode QRIS tanpa menu umum/inisial toko
     },
     customer: {
       name: order.name,

@@ -119,7 +119,8 @@ export function getAdminWhatsAppConfirmationLink(order: Order): string {
 }
 
 /**
- * Pengiriman otomatis via Gateway WhatsApp (Fonnte) jika TOKEN dikonfigurasi
+ * Pengiriman otomatis via Gateway WhatsApp (Fonnte) jika TOKEN dikonfigurasi.
+ * Mengirim pesan teks konfirmasi pembayaran.
  */
 export async function sendWhatsAppNotification(order: Order): Promise<{ success: boolean; message: string }> {
   const token = process.env.FONNTE_TOKEN?.trim() || 'L51Vfvj6BNViqEM3pUV8';
@@ -160,6 +161,80 @@ export async function sendWhatsAppNotification(order: Order): Promise<{ success:
     return {
       success: false,
       message: 'Gagal menghubungi server WhatsApp Gateway',
+    };
+  }
+}
+
+/**
+ * Kirim dokumen PDF bukti pembayaran/invoice langsung via WhatsApp (Fonnte).
+ *
+ * Fonnte mendukung pengiriman file PDF melalui parameter `url` (URL publik PDF)
+ * dan `filename` (nama file yang tampil di chat WA penerima).
+ * Fonnte akan mendownload PDF dari URL tersebut dan mengirimnya sebagai DOKUMEN
+ * (bukan link) ke nomor WA tujuan — penerima cukup tap untuk membuka PDF.
+ *
+ * Catatan: Fitur ini memerlukan paket Fonnte yang mendukung attachment media
+ * (paket Super, Advanced, atau Ultra). Pastikan invoice URL dapat diakses publik.
+ */
+export async function sendWhatsAppInvoicePDF(order: Order): Promise<{ success: boolean; message: string }> {
+  const token = process.env.FONNTE_TOKEN?.trim() || 'L51Vfvj6BNViqEM3pUV8';
+  const target = formatPhoneNumberToWA(order.phone);
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || 'https://jersey-order-app-chi.vercel.app';
+
+  // URL endpoint yang menghasilkan binary PDF sungguhan (application/pdf)
+  // via @react-pdf/renderer — Fonnte akan mendownload dan mengirimnya sebagai
+  // dokumen PDF asli ke chat WhatsApp penerima.
+  const invoicePdfUrl = `${baseUrl}/api/invoice/${order.id}/pdf`;
+
+  // Caption singkat yang menyertai dokumen PDF
+  const caption =
+    `📄 *Bukti Pembayaran Resmi — Invoice PDF*\n` +
+    `No. Pesanan: *${order.id}*\n` +
+    `Pemesan: *${order.name}* (${order.division || 'Bagian Umum'})\n` +
+    `Total: *${formatRupiah(order.totalPrice)}*\n` +
+    `Status: ✅ *LUNAS*\n\n` +
+    `Simpan dokumen ini sebagai bukti pembayaran resmi Anda.\n` +
+    `_Aulia NAWASENA • Kanwil DJPb Kepulauan Bangka Belitung_`;
+
+  if (!token) {
+    console.log(`[WhatsApp PDF Mock] Invoice PDF untuk ${target}: ${invoicePdfUrl}`);
+    return {
+      success: true,
+      message: 'Mode simulasi: Invoice PDF dicatat ke log (Siapkan FONNTE_TOKEN untuk kirim asli).',
+    };
+  }
+
+  try {
+    // Fonnte: kirim dokumen via URL publik — penerima mendapat file PDF di WA
+    // (bukan link, melainkan file attachment yang bisa dibuka langsung)
+    const formData = new URLSearchParams();
+    formData.append('target', target);
+    formData.append('message', caption);
+    formData.append('url', invoicePdfUrl);
+    formData.append('filename', `Invoice-Jersey-${order.id}.pdf`);
+    formData.append('countryCode', '62');
+
+    const res = await fetch('https://api.fonnte.com/send', {
+      method: 'POST',
+      headers: {
+        Authorization: token,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+
+    const result = await res.json();
+    console.log('[Fonnte PDF Send Result]:', result);
+    return {
+      success: result.status === true,
+      message: result.reason || 'Invoice PDF berhasil dikirim ke WhatsApp pemesan',
+    };
+  } catch (error) {
+    console.error('Gagal mengirim Invoice PDF via WhatsApp:', error);
+    return {
+      success: false,
+      message: 'Gagal mengirim Invoice PDF ke WhatsApp',
     };
   }
 }

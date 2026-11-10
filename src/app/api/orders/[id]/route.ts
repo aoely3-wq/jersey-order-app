@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById, updateOrderStatus, deleteOrder } from '@/lib/orders';
 import { OrderStatus } from '@/lib/types';
-import { sendWhatsAppNotification } from '@/lib/whatsapp';
+import { sendWhatsAppNotification, sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
 import { checkDokuOrderStatus, isDokuConfigured } from '@/lib/doku';
 
 export async function GET(
@@ -24,9 +24,12 @@ export async function GET(
           const updated = await updateOrderStatus(id, 'PAID');
           if (updated) {
             order = updated;
-            // Kirim notifikasi WA otomatis dengan tautan invoice PDF
+            // Kirim notifikasi WA otomatis dengan tautan & dokumen PDF resmi
             try {
               await sendWhatsAppNotification(updated);
+              sendWhatsAppInvoicePDF(updated).catch((err) =>
+                console.error('[DOKU Active Polling] Gagal mengirim PDF WA:', err)
+              );
             } catch (waErr) {
               console.error('[DOKU Active Polling] Gagal mengirim WA:', waErr);
             }
