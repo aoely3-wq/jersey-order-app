@@ -19,7 +19,7 @@ import {
   Eye,
   Building2,
   ShieldCheck,
-  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { Order, formatRupiah } from '@/lib/types';
 import {
@@ -61,6 +61,7 @@ export default function QrisPaymentModal({
     setCurrentOrder(order);
   }, [order]);
 
+  // Muat URL pembayaran DOKU Checkout untuk Virtual Account Multi-Bank
   const loadDokuPayment = async () => {
     if (currentOrder.status === 'PAID') return;
     setIsLoadingDoku(true);
@@ -75,19 +76,38 @@ export default function QrisPaymentModal({
         setDokuError(data.message || 'Koneksi DOKU belum tersedia.');
       }
     } catch (err) {
-      console.error('DOKU VA fetch error:', err);
+      console.error('DOKU fetch error:', err);
       setDokuError('Terjadi gangguan jaringan saat menghubungkan ke DOKU.');
     } finally {
       setIsLoadingDoku(false);
     }
   };
 
-  // Ambil URL pembayaran resmi DOKU untuk Virtual Account Multi-Bank
   useEffect(() => {
     if (isOpen && currentOrder.status !== 'PAID') {
       loadDokuPayment();
     }
   }, [isOpen, currentOrder.id, currentOrder.status]);
+
+  // Polling otomatis setiap 4 detik untuk update status real-time saat dibayar
+  useEffect(() => {
+    if (!isOpen || currentOrder.status === 'PAID') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/${currentOrder.id}`);
+        const data = await res.json();
+        if (data.success && data.data?.status === 'PAID') {
+          setCurrentOrder(data.data);
+          onPaymentSuccess(data.data);
+        }
+      } catch {
+        // silent catch
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, currentOrder.id, currentOrder.status, onPaymentSuccess]);
 
   // Countdown timer
   useEffect(() => {
@@ -120,11 +140,11 @@ export default function QrisPaymentModal({
         setCurrentOrder(data.data);
         onPaymentSuccess(data.data);
       } else {
-        setErrorMsg(data.message || 'Gagal memproses simulasi');
+        setErrorMsg(data.message || 'Gagal memproses verifikasi');
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg('Koneksi terputus saat simulasi');
+      setErrorMsg('Koneksi terputus saat verifikasi');
     } finally {
       setIsSimulating(false);
     }
@@ -149,13 +169,13 @@ export default function QrisPaymentModal({
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/80">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-blue-900 text-white flex items-center justify-center shadow-xs">
-              <CreditCard className="w-4 h-4 text-amber-300" />
+              <ShieldCheck className="w-4 h-4 text-amber-300" />
             </div>
             <div>
               <h3 className="font-extrabold text-blue-950 text-sm sm:text-base leading-tight">
-                {isPaid ? 'Bukti Pembayaran Lunas' : 'Pembayaran QRIS & Virtual Account'}
+                {isPaid ? 'Bukti Pembayaran Lunas' : 'Pembayaran Resmi DOKU'}
               </h3>
-              <p className="text-[11px] text-slate-500 font-medium">Aulia NAWASENA</p>
+              <p className="text-[11px] text-slate-500 font-medium">{QRIS_MERCHANT_NAME}</p>
             </div>
           </div>
           <button
@@ -195,27 +215,27 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* TAB SWITCHER: QRIS VS VIRTUAL ACCOUNT BANK */}
+          {/* TAB SWITCHER: QRIS RESMI DOKU VS VIRTUAL ACCOUNT DOKU */}
           {/* ============================================================== */}
           {!isPaid && (
             <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl border border-slate-200 mb-4 gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab('qris')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'qris'
                     ? 'bg-blue-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                 }`}
               >
                 <QrCode className="w-3.5 h-3.5" />
-                <span>QRIS DANA Bisnis</span>
+                <span>QRIS DOKU (Scan)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('va')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'va'
                     ? 'bg-blue-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
@@ -228,7 +248,7 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* OPSI 1: QRIS CARD DANA BISNIS RESMI */}
+          {/* TAB 1: QRIS RESMI DOKU (JERSEY KANWIL DJPB BABEL) */}
           {/* ============================================================== */}
           {!isPaid && activeTab === 'qris' && (
             <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white mb-4 animate-in fade-in duration-200">
@@ -237,7 +257,7 @@ export default function QrisPaymentModal({
                 <div className="flex items-center gap-2">
                   <span className="font-black tracking-widest text-lg font-sans">QRIS</span>
                   <span className="text-[10px] tracking-tight bg-white/20 px-2 py-0.5 rounded font-medium">
-                    DANA Bisnis
+                    DOKU Merchant
                   </span>
                 </div>
                 <div className="text-[10px] tracking-tight font-semibold bg-red-950/40 px-2 py-0.5 rounded text-white border border-white/20">
@@ -263,7 +283,7 @@ export default function QrisPaymentModal({
                 <button
                   type="button"
                   onClick={() => setQrMode('dynamic')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     qrMode === 'dynamic'
                       ? 'bg-white text-blue-950 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -274,13 +294,13 @@ export default function QrisPaymentModal({
                 <button
                   type="button"
                   onClick={() => setQrMode('poster')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     qrMode === 'poster'
                       ? 'bg-white text-blue-950 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  📄 Poster Asli DANA
+                  📄 Poster Asli DOKU
                 </button>
               </div>
 
@@ -291,13 +311,13 @@ export default function QrisPaymentModal({
                     <div className="p-3 bg-white border-2 border-slate-200 rounded-2xl shadow-inner">
                       <QRCodeSVG
                         value={dynamicQrisPayload}
-                        size={190}
+                        size={195}
                         level="M"
                         includeMargin={false}
                       />
                     </div>
                     <div className="mt-2.5 text-center">
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700 mb-1">
+                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700 mb-1">
                         <Sparkles className="w-3 h-3 text-emerald-600" />
                         <span>Nominal Terkunci Otomatis Saat Scan</span>
                       </div>
@@ -309,17 +329,17 @@ export default function QrisPaymentModal({
                   </>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <div className="relative w-48 h-60 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                    <div className="relative w-52 h-72 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
                       <Image
-                        src="/qris-dana.jpg"
-                        alt="Poster QRIS DANA Bisnis"
+                        src="/qris-doku.png"
+                        alt="Poster QRIS DOKU Jersey Kanwil DJPb Babel"
                         fill
                         className="object-contain"
                       />
                     </div>
                     <div className="mt-2 text-center">
                       <a
-                        href="/qris-dana.jpg"
+                        href="/qris-doku.png"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-bold hover:underline"
@@ -335,14 +355,14 @@ export default function QrisPaymentModal({
               {/* Bottom Instructions */}
               <div className="bg-slate-50 px-4 py-2.5 text-center border-t border-slate-100">
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Scan via <b>BCA, Mandiri, BRImo, BNI, GoPay, OVO, ShopeePay, DANA</b> &amp; semua aplikasi m-Banking berlogo QRIS.
+                  Scan via <b>BCA, Mandiri Livin&apos;, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, LinkAja</b> &amp; semua aplikasi m-Banking berlogo QRIS.
                 </p>
               </div>
             </div>
           )}
 
           {/* ============================================================== */}
-          {/* OPSI 2: VIRTUAL ACCOUNT (VA) MULTI-BANK VIA DOKU */}
+          {/* TAB 2: VIRTUAL ACCOUNT (VA) MULTI-BANK VIA DOKU */}
           {/* ============================================================== */}
           {!isPaid && activeTab === 'va' && (
             <div className="border border-blue-200 rounded-2xl overflow-hidden shadow-sm bg-white mb-4 animate-in fade-in duration-200">
@@ -452,7 +472,8 @@ export default function QrisPaymentModal({
                         onClick={loadDokuPayment}
                         className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                       >
-                        <span>🔄 Coba Muat Ulang Virtual Account</span>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Coba Muat Ulang Virtual Account</span>
                       </button>
 
                       <button
@@ -461,7 +482,7 @@ export default function QrisPaymentModal({
                         className="w-full py-2.5 px-3 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <QrCode className="w-3.5 h-3.5 text-amber-300" />
-                        <span>⚡ Bayar via QRIS DANA (Bisa Semua Bank &amp; E-Wallet)</span>
+                        <span>⚡ Bayar via QRIS DOKU (Bisa Semua Bank &amp; E-Wallet)</span>
                       </button>
                     </div>
                   </div>
@@ -480,7 +501,7 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* KONFIRMASI PEMBAYARAN KE ADMIN VIA WHATSAPP */}
+          {/* KONFIRMASI PEMBAYARAN KE ADMIN VIA WHATSAPP (OPSIONAL) */}
           {/* ============================================================== */}
           {!isPaid && (
             <div className="bg-emerald-50/90 border border-emerald-300 rounded-2xl p-3.5 mb-4">
@@ -493,7 +514,7 @@ export default function QrisPaymentModal({
                     Sudah Melakukan Pembayaran?
                   </h5>
                   <p className="text-[11px] text-emerald-800 leading-snug mt-0.5">
-                    Kirim screenshot bukti transfer / struk pembayaran ke WhatsApp Admin (Aulia Rahim) untuk pencatatan:
+                    Kirim screenshot bukti transfer / struk pembayaran ke WhatsApp Admin ({ADMIN_PHONE}) untuk pencatatan:
                   </p>
                 </div>
               </div>
@@ -649,17 +670,17 @@ export default function QrisPaymentModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-black text-white font-semibold py-2.5 px-4 rounded-xl text-xs shadow-xs transition-colors cursor-pointer"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors shadow-xs cursor-pointer"
               >
-                <span>Tutup Jendela</span>
+                Selesai &amp; Tutup
               </button>
             ) : (
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-700 font-medium py-2.5 px-3 rounded-xl text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs transition-colors cursor-pointer"
               >
-                <span>Tutup (Bayar Nanti)</span>
+                Tutup Sementara
               </button>
             )}
           </div>

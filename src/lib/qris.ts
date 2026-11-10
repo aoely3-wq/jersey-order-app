@@ -1,13 +1,14 @@
 /**
  * Modul Generator QRIS Resmi Bank Indonesia (ASPI / EMVCo)
- * Menggunakan QRIS DANA Bisnis Resmi: Aulia Nawasena, Pakaian (NMID: ID1026635931953)
+ * Menggunakan QRIS Resmi DOKU: Jersey Kanwil DJPb Babel (NMID: ID1026636092060)
+ * Acquirer: DOKU / PT Nusa Satu Inti Artha (93600899)
  */
 
-export const DANA_STATIC_QRIS =
-  '00020101021126570011ID.DANA.WWW011893600915303685802702090368580270303UMI51440014ID.CO.QRIS.WWW0215ID10266359319530303UMI5204561153033605802ID5923Aulia Nawasena, Pakaian6009Tangerang61051515463042A07';
+export const DOKU_STATIC_QRIS =
+  '00020101021126550012COM.DOKU.WWW011893600899000011716102061171610303UKE51440014ID.CO.QRIS.WWW0215ID10266360920600303UKE5204594153033605802ID5924Jersey Kanwil DJPb Babel6009TANGERANG61051515462070703A01630498C6';
 
-export const QRIS_MERCHANT_NAME = 'Aulia Nawasena, Pakaian';
-export const QRIS_NMID = 'ID1026635931953';
+export const QRIS_MERCHANT_NAME = 'Jersey Kanwil DJPb Babel';
+export const QRIS_NMID = 'ID1026636092060';
 
 /**
  * Menghitung Checksum CRC16 CCITT-FALSE standar EMVCo / ASPI QRIS
@@ -18,28 +19,27 @@ export function crc16(str: string): string {
     crc ^= str.charCodeAt(c) << 8;
     for (let i = 0; i < 8; i++) {
       if (crc & 0x8000) {
-        crc = (crc << 1) ^ 0x1021;
+        crc = ((crc << 1) ^ 0x1021) & 0xffff;
       } else {
-        crc = crc << 1;
+        crc = (crc << 1) & 0xffff;
       }
-      crc &= 0xffff;
     }
   }
   return crc.toString(16).toUpperCase().padStart(4, '0');
 }
 
 /**
- * Mengonversi QRIS Statis DANA Bisnis menjadi QRIS Dinamis dengan nominal tagihan otomatis.
- * Saat di-scan menggunakan m-BCA, Livin Mandiri, BRImo, GoPay, ShopeePay, dll.,
- * nominal transfer sudah otomatis terisi dan terkunci sesuai harga pesanan!
+ * Mengonversi QRIS Statis DOKU menjadi QRIS Dinamis dengan nominal tagihan otomatis.
+ * Saat di-scan menggunakan m-BCA, Livin Mandiri, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, dll.,
+ * nominal transfer sudah otomatis terisi dan terkunci sesuai harga pesanan jersey!
  */
 export function generateDynamicQris(amount: number): string {
   if (!amount || amount <= 0) {
-    return DANA_STATIC_QRIS;
+    return DOKU_STATIC_QRIS;
   }
 
   // Hapus 4 karakter CRC lama di akhir string
-  let qris = DANA_STATIC_QRIS.slice(0, -4);
+  let qris = DOKU_STATIC_QRIS.slice(0, -4);
 
   // Ubah Tag 01 (Point of Initiation Method) dari '010211' (Statis) menjadi '010212' (Dinamis)
   qris = qris.replace('010211', '010212');
@@ -57,8 +57,7 @@ export function generateDynamicQris(amount: number): string {
     qris = qris.slice(0, insertPosition) + tag54 + qris.slice(insertPosition);
   }
 
-  // Hitung ulang checksum CRC16 standar
+  // Hitung ulang checksum CRC16 standar EMVCo
   const newCrc = crc16(qris);
   return qris + newCrc;
 }
-
