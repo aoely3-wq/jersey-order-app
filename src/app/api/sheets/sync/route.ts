@@ -48,3 +48,4 @@ export async function GET() {
     url: process.env.GOOGLE_SHEET_URL ? 'TERHUBUNG (Hidden for security)' : null,
   });
 }
+
