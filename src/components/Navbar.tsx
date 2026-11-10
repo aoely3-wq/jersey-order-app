@@ -12,9 +12,8 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-11 h-11 rounded-xl bg-[#002B5B] text-white flex items-center justify-center shadow-md shadow-[#002B5B]/25 group-hover:scale-105 transition-all border border-[#D4AF37]/50">
+          <div className="relative w-11 h-11 rounded-xl bg-[#002B5B] text-white flex items-center justify-center shadow-sm shadow-[#002B5B]/25 transition-all border border-[#D4AF37]/50">
             <Shirt className="w-5 h-5 text-[#D4AF37]" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#D4AF37] rounded-full border-2 border-white animate-pulse" />
           </div>
           <div>
             <div className="font-extrabold text-slate-900 leading-tight flex items-center gap-2">

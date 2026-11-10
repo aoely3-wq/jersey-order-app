@@ -273,11 +273,11 @@ export default function OrderPage() {
             2 Pilihan Warna: Varian Putih (Biru Kemenkeu) &bull; Gradasi Merah Maroon
           </p>
           <p className="mt-3 text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-2xl">
-            Pemesanan resmi seragam jersey kantor. Anda dapat memesan <b>lebih dari satu jersey</b> (beda warna, ukuran, atau lengan) dalam <b>satu keranjang pembayaran sekaligus</b> via QRIS DANA Bisnis &amp; Virtual Account DOKU.
+            Pemesanan resmi seragam jersey dinas &amp; olahraga. Anda dapat memesan <b>lebih dari satu jersey</b> (beda warna, ukuran, atau model lengan) dalam <b>satu keranjang pembayaran sekaligus</b> via QRIS &amp; Virtual Account Bank resmi DOKU Payment Gateway.
           </p>
 
           <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs text-blue-200">Sudah memesan dan ingin cek status atau bayar?</span>
+            <span className="text-xs text-blue-200">Sudah memesan dan ingin cek status atau unduh faktur?</span>
             <Link
               href="/status"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#D4AF37] hover:bg-[#c5a028] text-slate-950 text-xs font-black transition-all shadow-sm shadow-black/10 hover:scale-[1.02]"
@@ -294,7 +294,7 @@ export default function OrderPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#002B5B] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#002B5B]" />
               <h2 className="text-lg sm:text-xl font-extrabold text-[#002B5B] tracking-tight">
                 Preview Desain Jersey
               </h2>
@@ -406,38 +406,50 @@ export default function OrderPage() {
         {/* BENTO BOX SPESIFIKASI JERSEY (KEMENKEU CARDS) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100">
           <div className="kemenkeu-card">
-            <h5 className="font-extrabold text-sm text-[#002B5B] flex items-center gap-1.5 mb-1">
-              <span>✨ Motif Cual Serpihan</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-50 text-[#D4AF37] border border-amber-200/60 flex items-center justify-center mb-2.5">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <h5 className="font-extrabold text-sm text-[#002B5B] mb-1">
+              Motif Cual Serpihan
             </h5>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Kearifan lokal motif Cual Bangka Belitung dengan sentuhan geometri modern.
+              Kearifan lokal tenun Cual Bangka Belitung berpadu aksen geometri modern.
             </p>
           </div>
 
           <div className="kemenkeu-card">
-            <h5 className="font-extrabold text-sm text-[#002B5B] flex items-center gap-1.5 mb-1">
-              <span>🏛 Identitas Kemenkeu</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#002B5B] border border-blue-200/60 flex items-center justify-center mb-2.5">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <h5 className="font-extrabold text-sm text-[#002B5B] mb-1">
+              Identitas Kemenkeu
             </h5>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Logo resmi InTress di dada kiri &amp; DJPb Babel di kedua lengan jersey.
+              Logo resmi InTress di dada kiri &amp; identitas DJPb Babel di kedua lengan.
             </p>
           </div>
 
           <div className="kemenkeu-card">
-            <h5 className="font-extrabold text-sm text-[#002B5B] flex items-center gap-1.5 mb-1">
-              <span>👕 Dry-Fit Milano</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#002B5B] border border-blue-200/60 flex items-center justify-center mb-2.5">
+              <Shirt className="w-4 h-4" />
+            </div>
+            <h5 className="font-extrabold text-sm text-[#002B5B] mb-1">
+              Dry-Fit Milano Premium
             </h5>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Ringan, adem, berpori mikro, cepat menyerap keringat untuk kenyamanan maksimal.
+              Kain berpori mikro, sirkulasi udara optimal, cepat kering, dan adem dipakai.
             </p>
           </div>
 
           <div className="kemenkeu-card">
-            <h5 className="font-extrabold text-sm text-[#002B5B] flex items-center gap-1.5 mb-1">
-              <span>🎨 Full Printing Sublim</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center mb-2.5">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <h5 className="font-extrabold text-sm text-[#002B5B] mb-1">
+              Full Printing Sublim
             </h5>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Warna cerah tajam tahan lama, tidak mudah pudar atau luntur saat dicuci berulang.
+              Warna tajam beresolusi tinggi, tahan lama, dan tidak luntur saat dicuci berulang.
             </p>
           </div>
         </div>
@@ -797,8 +809,8 @@ export default function OrderPage() {
                   onClick={handleAddToCart}
                   className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#D4AF37] hover:bg-[#c5a028] text-slate-950 font-black text-xs sm:text-sm transition-all shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 >
-                  <ShoppingCart className="w-4 h-4 text-slate-950" />
-                  <span>➕ Tambahkan ke Keranjang</span>
+                  <Plus className="w-4 h-4 text-slate-950" />
+                  <span>Tambahkan ke Keranjang</span>
                 </button>
               </div>
 
@@ -874,7 +886,7 @@ export default function OrderPage() {
                     Belum ada jersey tambahan di keranjang.
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    Item yang sedang Anda tentukan di formulir kiri otomatis dihitung ({formatRupiah(currentItemSubtotal)}). Klik tombol emas <b>[＋ Tambahkan ke Keranjang]</b> jika ingin memesan lebih dari satu jersey atau beda ukuran.
+                    Item yang sedang Anda tentukan di formulir kiri otomatis dihitung ({formatRupiah(currentItemSubtotal)}). Klik tombol emas <b>[+ Tambahkan ke Keranjang]</b> jika ingin memesan lebih dari satu jersey atau beda ukuran.
                   </p>
                 </div>
               ) : (

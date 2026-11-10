@@ -397,24 +397,26 @@ export default function QrisPaymentModal({
                 <button
                   type="button"
                   onClick={() => setQrMode('dynamic')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     qrMode === 'dynamic'
                       ? 'bg-white text-[#002B5B] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  ⚡ QR Otomatis (Nominal Pas)
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>QR Nominal Pas</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setQrMode('poster')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     qrMode === 'poster'
                       ? 'bg-white text-[#002B5B] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  📄 Poster Asli DOKU
+                  <FileText className="w-3.5 h-3.5 text-[#002B5B]" />
+                  <span>Poster Resmi DOKU</span>
                 </button>
               </div>
 
