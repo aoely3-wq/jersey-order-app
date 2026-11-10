@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (size === '3XL') size = 'XXXL';
+    if (size === '4XL') size = 'XXXXL';
 
-    const validSizes: JerseySize[] = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'XS', '4XL'];
+    const validSizes: JerseySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'XXXXL', '3XL', '4XL'];
     const validSleeves: SleeveType[] = ['pendek', 'panjang'];
 
     if (!validSizes.includes(size)) {
