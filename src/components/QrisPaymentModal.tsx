@@ -11,8 +11,6 @@ import {
   AlertCircle,
   Copy,
   Check,
-  Sparkles,
-  MessageCircle,
   ExternalLink,
   CreditCard,
   Smartphone,
@@ -20,6 +18,7 @@ import {
   Building2,
   ShieldCheck,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { Order, formatRupiah } from '@/lib/types';
 import {
@@ -30,7 +29,6 @@ import {
 import {
   getWhatsAppDirectLink,
   getAdminWhatsAppConfirmationLink,
-  ADMIN_PHONE,
 } from '@/lib/whatsapp';
 
 interface QrisPaymentModalProps {
@@ -38,6 +36,7 @@ interface QrisPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPaymentSuccess: (updatedOrder: Order) => void;
+  isAdmin?: boolean;
 }
 
 export default function QrisPaymentModal({
@@ -45,6 +44,7 @@ export default function QrisPaymentModal({
   isOpen,
   onClose,
   onPaymentSuccess,
+  isAdmin = false,
 }: QrisPaymentModalProps) {
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -89,7 +89,7 @@ export default function QrisPaymentModal({
     }
   }, [isOpen, currentOrder.id, currentOrder.status]);
 
-  // Polling otomatis setiap 4 detik untuk update status real-time saat dibayar
+  // Polling otomatis setiap 4 detik untuk update status real-time saat dibayar oleh pembeli
   useEffect(() => {
     if (!isOpen || currentOrder.status === 'PAID') return;
 
@@ -128,7 +128,8 @@ export default function QrisPaymentModal({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleSimulatePayment = async () => {
+  // Khusus mode Admin jika admin ingin menandai lunas secara manual
+  const handleAdminMarkPaid = async () => {
     setIsSimulating(true);
     setErrorMsg('');
     try {
@@ -355,7 +356,7 @@ export default function QrisPaymentModal({
               {/* Bottom Instructions */}
               <div className="bg-slate-50 px-4 py-2.5 text-center border-t border-slate-100">
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Scan via <b>BCA, Mandiri Livin&apos;, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, LinkAja</b> &amp; semua aplikasi m-Banking berlogo QRIS.
+                  Scan via <b>BCA, Mandiri Livin&apos;, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, LinkAja</b> &amp; semua aplikasi m-Banking berlogo QRIS. Pembayaran otomatis terverifikasi <b>LUNAS</b> begitu selesai!
                 </p>
               </div>
             </div>
@@ -501,38 +502,6 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* KONFIRMASI PEMBAYARAN KE ADMIN VIA WHATSAPP (OPSIONAL) */}
-          {/* ============================================================== */}
-          {!isPaid && (
-            <div className="bg-emerald-50/90 border border-emerald-300 rounded-2xl p-3.5 mb-4">
-              <div className="flex items-start gap-2.5 mb-2.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <MessageCircle className="w-4 h-4" />
-                </div>
-                <div>
-                  <h5 className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
-                    Sudah Melakukan Pembayaran?
-                  </h5>
-                  <p className="text-[11px] text-emerald-800 leading-snug mt-0.5">
-                    Kirim screenshot bukti transfer / struk pembayaran ke WhatsApp Admin ({ADMIN_PHONE}) untuk pencatatan:
-                  </p>
-                </div>
-              </div>
-
-              <a
-                href={waAdminUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all text-xs hover:scale-[1.01]"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Kirim Bukti Bayar ke WA Admin ({ADMIN_PHONE})</span>
-                <ExternalLink className="w-3 h-3 ml-0.5 opacity-80" />
-              </a>
-            </div>
-          )}
-
-          {/* ============================================================== */}
           {/* DIGITAL RECEIPT CARD (Ketika LUNAS) */}
           {/* ============================================================== */}
           {isPaid && (
@@ -557,7 +526,7 @@ export default function QrisPaymentModal({
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span className="text-slate-500 text-xs">Model &amp; Ukuran</span>
                   <span className="font-medium text-slate-800">
-                    {currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} &bull; {currentOrder.size} ({currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})
+                    {currentOrder.genderCut === 'ladies' ? 'Ladies' : 'Reguler Men'} &bull; Size {currentOrder.size} ({currentOrder.sleeve === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek'})
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
@@ -578,10 +547,10 @@ export default function QrisPaymentModal({
               <div className="bg-emerald-50/90 border border-emerald-300 rounded-2xl p-3.5">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                    <MessageCircle className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                   </div>
                   <h5 className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
-                    Kirim Invoice ke WhatsApp
+                    Simpan / Kirim Invoice ke WhatsApp
                   </h5>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -601,7 +570,7 @@ export default function QrisPaymentModal({
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-1.5 bg-blue-900 hover:bg-blue-950 text-white font-bold py-2 px-2.5 rounded-xl text-xs transition-colors"
                   >
-                    <MessageCircle className="w-3.5 h-3.5" />
+                    <Smartphone className="w-3.5 h-3.5" />
                     <span>Ke WA Admin</span>
                     <ExternalLink className="w-3 h-3 opacity-80" />
                   </a>
@@ -611,18 +580,18 @@ export default function QrisPaymentModal({
           )}
 
           {/* ============================================================== */}
-          {/* SIMULATION / VERIFIKASI INSTAN (UNTUK TESTING / PANITIA) */}
+          {/* KHUSUS MODE ADMIN (Hanya Muncul Jika Akses dari Panel Admin) */}
           {/* ============================================================== */}
-          {!isPaid && (
-            <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 mb-4">
+          {isAdmin && !isPaid && (
+            <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 mb-4">
               <div className="flex items-start gap-2.5">
-                <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h5 className="text-xs font-bold text-blue-900 uppercase tracking-wide">
-                    Verifikasi Pembayaran / Mode Cepat
+                  <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                    Aksi Khusus Admin
                   </h5>
-                  <p className="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
-                    Klik tombol di bawah jika dana transfer QRIS / VA sudah masuk untuk mengubah status pesanan menjadi <b>LUNAS</b>:
+                  <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                    Tandai pesanan ini lunas secara manual jika pemesan membayar tunai langsung ke panitia:
                   </p>
                 </div>
               </div>
@@ -636,19 +605,19 @@ export default function QrisPaymentModal({
 
               <button
                 type="button"
-                onClick={handleSimulatePayment}
+                onClick={handleAdminMarkPaid}
                 disabled={isSimulating}
-                className="mt-2.5 w-full flex items-center justify-center gap-2 bg-blue-900 hover:bg-blue-950 text-white font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 text-xs sm:text-sm cursor-pointer"
+                className="mt-2.5 w-full flex items-center justify-center gap-2 bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 px-4 rounded-xl shadow-xs transition-all text-xs cursor-pointer disabled:opacity-50"
               >
                 {isSimulating ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Memproses Verifikasi...</span>
+                    <span>Memproses...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Konfirmasi Pembayaran Berhasil (Tandai Lunas)</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                    <span>Tandai Lunas Manual (Admin)</span>
                   </>
                 )}
               </button>

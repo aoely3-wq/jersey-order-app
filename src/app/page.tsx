@@ -21,6 +21,7 @@ import {
   Eye,
   Building2,
   UserCheck,
+  Search,
 } from 'lucide-react';
 import {
   JerseySize,
@@ -142,6 +143,17 @@ export default function OrderPage() {
           <p className="mt-3 text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-2xl">
             Pemesanan resmi jersey kantor dengan pilihan potongan <b>Size Reguler (Men)</b> &amp; <b>Size Ladies</b>, pilihan lengan pendek/panjang, serta pembayaran mandiri QRIS otomatis terkoneksi ke Google Sheets.
           </p>
+
+          <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs text-blue-200">Sudah memesan dan ingin cek status atau bayar?</span>
+            <Link
+              href="/status"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-blue-950 text-xs font-black transition-all shadow-sm shadow-black/10 hover:scale-[1.02]"
+            >
+              <Search className="w-3.5 h-3.5 text-blue-950" />
+              <span>Cek Status &amp; Bayar Pesanan &rarr;</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -522,25 +534,26 @@ export default function OrderPage() {
                 </div>
               )}
 
-              {/* Size Buttons Grid (S sampai XXXL) */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {/* Size Buttons Grid (XS sampai XXXXL) */}
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                 {SIZES.map((item) => {
                   const isSelected = size === item.value;
-                  const isExtra = item.value === 'XXXL';
+                  const is3XL = item.value === 'XXXL';
+                  const is4XL = item.value === 'XXXXL';
 
                   return (
                     <button
                       key={item.value}
                       type="button"
                       onClick={() => setSize(item.value)}
-                      className={`py-3 px-1 rounded-xl border-2 text-center transition-all flex flex-col items-center justify-center ${
+                      className={`py-2.5 px-1 rounded-xl border-2 text-center transition-all flex flex-col items-center justify-center cursor-pointer ${
                         isSelected
                           ? 'border-blue-900 bg-blue-900 text-white font-bold shadow-md shadow-blue-900/20 scale-[1.02]'
                           : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
                       }`}
                     >
-                      <span className="text-sm font-bold">{item.value}</span>
-                      {isExtra && (
+                      <span className="text-xs sm:text-sm font-bold">{item.value}</span>
+                      {is3XL && (
                         <span
                           className={`text-[9px] font-bold mt-0.5 px-1 rounded ${
                             isSelected
@@ -551,12 +564,23 @@ export default function OrderPage() {
                           +5rb
                         </span>
                       )}
+                      {is4XL && (
+                        <span
+                          className={`text-[9px] font-bold mt-0.5 px-1 rounded ${
+                            isSelected
+                              ? 'bg-amber-400 text-slate-950'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          +10rb
+                        </span>
+                      )}
                     </button>
                   );
                 })}
               </div>
               <p className="text-[11px] text-slate-500 mt-2">
-                *Ukuran XXXL (3XL) dikenakan biaya tambahan Rp 5.000 untuk konsumsi kain ekstra konveksi.
+                *Ukuran <b>XXXL (3XL) +Rp 5.000</b> dan <b>XXXXL (4XL) +Rp 10.000</b> untuk pemakaian kain ekstra konveksi.
               </p>
             </div>
 
