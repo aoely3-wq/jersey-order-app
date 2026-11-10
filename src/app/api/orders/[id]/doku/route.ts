@@ -24,9 +24,9 @@ export async function POST(
       });
     }
 
-    // Ambil base origin untuk callback redirect
+    // Ambil base origin untuk callback redirect (ke halaman invoice pesanan)
     const origin = req.nextUrl.origin || 'http://localhost:3000';
-    const callbackUrl = `${origin}/rekap?order_id=${order.id}`;
+    const callbackUrl = `${origin}/invoice/${order.id}`;
 
     const dokuData = await createDokuCheckout(order, callbackUrl);
 

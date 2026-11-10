@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shirt, PlusCircle, Search, ShieldCheck, Sparkles, Lock, FileText } from 'lucide-react';
+import { Shirt, PlusCircle, Sparkles, FileText } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -57,20 +57,6 @@ export default function Navbar() {
           >
             <FileText className="w-4 h-4 text-[#D4AF37]" />
             <span>Cek Status &amp; Unduh PDF</span>
-          </Link>
-
-          {/* Menu Khusus Admin (Diberi Gembok) */}
-          <Link
-            href="/rekap"
-            title="Khusus Admin / Rekap"
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all border ${
-              pathname === '/rekap'
-                ? 'bg-[#D4AF37]/20 text-[#002B5B] border-[#D4AF37] shadow-xs'
-                : 'text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border-slate-200'
-            }`}
-          >
-            <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span className="hidden sm:inline">Admin</span>
           </Link>
         </nav>
       </div>
