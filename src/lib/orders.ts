@@ -139,6 +139,20 @@ export async function createOrder(params: CreateOrderParams): Promise<Order> {
     const totalQty = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
     const totalPrice = items.reduce((sum, it) => sum + it.subtotal, 0);
     const firstItem = items[0];
+    const isMulti = items.length > 1 || (items[0].quantity && items[0].quantity > 1);
+
+    const sizeSummary = isMulti
+      ? (items.map((it) => `${it.size} (${it.quantity}x)`).join(', ') as any)
+      : firstItem.size;
+
+    const sleeveSummary = isMulti
+      ? (items
+          .map(
+            (it) =>
+              `${it.color === 'maroon' ? 'Maroon' : 'Putih'} ${it.genderCut === 'ladies' ? 'Ladies' : 'Men'} (${it.sleeve === 'panjang' ? 'Pjg' : 'Pdk'})`
+          )
+          .join(', ') as any)
+      : firstItem.sleeve;
 
     newOrder = {
       id: newId,
@@ -146,8 +160,8 @@ export async function createOrder(params: CreateOrderParams): Promise<Order> {
       division: params.division?.trim() || 'Bagian Umum',
       genderCut: firstItem.genderCut,
       phone: params.phone.trim(),
-      size: firstItem.size,
-      sleeve: firstItem.sleeve,
+      size: sizeSummary,
+      sleeve: sleeveSummary,
       color: firstItem.color,
       items,
       totalQty,
