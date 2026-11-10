@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 export const metadata: Metadata = {
   title: 'Aulia NAWASENA - Platform Digital Pemesanan Jersey Olahraga',
   description:
-    'Aulia NAWASENA: Platform digital pemesanan jersey olahraga resmi motif Cual Kanwil DJPb Kepulauan Bangka Belitung dengan pembayaran mandiri via QRIS & Transfer Bank.',
+    'Aulia NAWASENA: Platform digital pemesanan jersey olahraga resmi motif Cual Kanwil DJPb Kepulauan Bangka Belitung dengan pembayaran mandiri via QRIS & Virtual Account Multi-Bank.',
 };
 
 export default function RootLayout({

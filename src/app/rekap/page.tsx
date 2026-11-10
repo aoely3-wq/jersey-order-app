@@ -373,7 +373,7 @@ S: ${sizeMatrix.totalPerSize.S} | M: ${sizeMatrix.totalPerSize.M} | L: ${sizeMat
           <div className="text-2xl font-black text-emerald-600">
             {formatRupiah(metrics.totalRevenuePaid)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">Terkonfirmasi via QRIS DANA / BRI</div>
+          <div className="text-xs text-slate-500 mt-1">Terkonfirmasi via QRIS / Virtual Account</div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
