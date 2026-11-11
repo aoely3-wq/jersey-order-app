@@ -36,6 +36,40 @@ function decodeItemsTag(tag: string): CartItem[] {
   });
 }
 
+/**
+ * Pesanan multi-item lama (sebelum tag [ITM:...]) menyimpan ringkasan teks:
+ *   size   = "XXL (1x), XL (1x)"
+ *   sleeve = "Putih Men (Pdk), Putih Ladies (Pjg)"
+ * Dipecah kembali per item (urutan sama). Mengembalikan [] bila bukan format ringkasan.
+ */
+function decodeLegacySummary(size: unknown, sleeve: unknown): CartItem[] {
+  if (typeof size !== 'string' || typeof sleeve !== 'string') return [];
+  const sizes = size.split(',').map((s) => s.trim().match(/^(\S+)\s*\((\d+)x\)$/));
+  const kinds = sleeve.split(',').map((s) => s.trim().match(/^(Maroon|Putih)\s+(Men|Ladies)\s*\((Pdk|Pjg)\)$/));
+  if (!sizes.length || sizes.length !== kinds.length || sizes.some((m) => !m) || kinds.some((m) => !m)) return [];
+
+  return sizes.map((sm, i) => {
+    const km = kinds[i]!;
+    const itemSize = sm![1] as CartItem['size'];
+    const itemSleeve: CartItem['sleeve'] = km[3] === 'Pjg' ? 'panjang' : 'pendek';
+    const quantity = Math.max(1, parseInt(sm![2], 10) || 1);
+    const pricing = calculatePrice(itemSleeve, itemSize);
+    return {
+      id: `item-${i + 1}`,
+      color: km[1] === 'Maroon' ? 'maroon' : 'putih',
+      genderCut: km[2] === 'Ladies' ? 'ladies' : 'men',
+      size: itemSize,
+      sleeve: itemSleeve,
+      quantity,
+      basePrice: pricing.basePrice,
+      sleeveExtra: pricing.sleeveExtra,
+      sizeExtra: pricing.sizeExtra,
+      unitPrice: pricing.totalPrice,
+      subtotal: pricing.totalPrice * quantity,
+    };
+  });
+}
+
 /** Catatan untuk Sheet: tag [DIV:...] dan [ITM:...] di depan catatan asli. */
 function buildSheetNotes(order: Order): string {
   const division = order.division?.trim() || 'Bagian Umum';
@@ -96,22 +130,24 @@ export async function fetchOrdersFromSheet(): Promise<Order[] | null> {
         }
 
         // Pulihkan warna/potongan/item dari tag [ITM:...]
-        let itemFields: Partial<Order> = {};
+        let items: CartItem[] = [];
         if (notes && typeof notes === 'string') {
           const m = notes.match(/\[ITM:(.+?)\]/);
           if (m) {
             notes = notes.replace(/\[ITM:(.+?)\]\s*/, '').trim() || undefined;
-            const items = decodeItemsTag(m[1]);
-            if (items.length) {
-              itemFields = {
-                items,
-                color: items[0].color,
-                genderCut: items[0].genderCut,
-                totalQty: items.reduce((s, it) => s + it.quantity, 0),
-              };
-            }
+            items = decodeItemsTag(m[1]);
           }
         }
+        // Pesanan multi-item lama: pecah dari ringkasan teks size/sleeve
+        if (!items.length) items = decodeLegacySummary(raw.size, raw.sleeve);
+        const itemFields: Partial<Order> = items.length
+          ? {
+              items,
+              color: items[0].color,
+              genderCut: items[0].genderCut,
+              totalQty: items.reduce((s, it) => s + it.quantity, 0),
+            }
+          : {};
 
         return {
           ...raw,
