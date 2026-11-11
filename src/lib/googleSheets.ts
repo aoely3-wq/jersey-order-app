@@ -1,4 +1,52 @@
-import { Order, OrderStatus } from './types';
+import { Order, OrderStatus, CartItem, calculatePrice } from './types';
+
+/**
+ * Sheet tidak punya kolom warna/potongan/item, jadi dikodekan di kolom catatan
+ * sebagai tag [ITM:warna-potongan-ukuran-lengan-jumlah,...] (pola sama dengan [DIV:...]).
+ */
+function encodeItemsTag(order: Order): string {
+  const items = order.items?.length
+    ? order.items
+    : [{ color: order.color, genderCut: order.genderCut, size: order.size, sleeve: order.sleeve, quantity: 1 }];
+  const parts = items
+    .filter((it) => it.color && it.genderCut && it.size && it.sleeve)
+    .map((it) => `${it.color}-${it.genderCut}-${it.size}-${it.sleeve}-${it.quantity || 1}`);
+  return parts.length ? `[ITM:${parts.join(',')}]` : '';
+}
+
+function decodeItemsTag(tag: string): CartItem[] {
+  return tag.split(',').flatMap((part, i) => {
+    const [color, genderCut, size, sleeve, qty] = part.split('-');
+    if (!color || !genderCut || !size || !sleeve) return [];
+    const pricing = calculatePrice(sleeve as CartItem['sleeve'], size as CartItem['size']);
+    const quantity = Math.max(1, parseInt(qty, 10) || 1);
+    return [{
+      id: `item-${i + 1}`,
+      color: color === 'maroon' ? 'maroon' : 'putih',
+      genderCut: genderCut === 'ladies' ? 'ladies' : 'men',
+      size: size as CartItem['size'],
+      sleeve: sleeve === 'panjang' ? 'panjang' : 'pendek',
+      quantity,
+      basePrice: pricing.basePrice,
+      sleeveExtra: pricing.sleeveExtra,
+      sizeExtra: pricing.sizeExtra,
+      unitPrice: pricing.totalPrice,
+      subtotal: pricing.totalPrice * quantity,
+    } as CartItem];
+  });
+}
+
+/** Catatan untuk Sheet: tag [DIV:...] dan [ITM:...] di depan catatan asli. */
+function buildSheetNotes(order: Order): string {
+  const division = order.division?.trim() || 'Bagian Umum';
+  let notes = order.notes?.trim() || '';
+  if (!notes.includes('[ITM:')) {
+    const tag = encodeItemsTag(order);
+    if (tag) notes = `${tag}${notes ? ` ${notes}` : ''}`;
+  }
+  if (!notes.includes('[DIV:')) notes = `[DIV:${division}]${notes ? ` ${notes}` : ''}`;
+  return notes;
+}
 
 /**
  * URL Google Apps Script Web App yang terhubung ke Google Sheet
@@ -47,8 +95,27 @@ export async function fetchOrdersFromSheet(): Promise<Order[] | null> {
           }
         }
 
+        // Pulihkan warna/potongan/item dari tag [ITM:...]
+        let itemFields: Partial<Order> = {};
+        if (notes && typeof notes === 'string') {
+          const m = notes.match(/\[ITM:(.+?)\]/);
+          if (m) {
+            notes = notes.replace(/\[ITM:(.+?)\]\s*/, '').trim() || undefined;
+            const items = decodeItemsTag(m[1]);
+            if (items.length) {
+              itemFields = {
+                items,
+                color: items[0].color,
+                genderCut: items[0].genderCut,
+                totalQty: items.reduce((s, it) => s + it.quantity, 0),
+              };
+            }
+          }
+        }
+
         return {
           ...raw,
+          ...itemFields,
           division: division || 'Bagian Umum',
           notes,
         } as Order;
@@ -71,16 +138,10 @@ export async function saveOrderToSheet(order: Order): Promise<boolean> {
   if (!url) return false;
 
   try {
-    const division = order.division?.trim() || 'Bagian Umum';
-    let sheetNotes = order.notes?.trim() || '';
-    if (!sheetNotes.includes('[DIV:')) {
-      sheetNotes = `[DIV:${division}]${sheetNotes ? ` ${sheetNotes}` : ''}`;
-    }
-
     const orderPayload = {
       ...order,
-      division,
-      notes: sheetNotes,
+      division: order.division?.trim() || 'Bagian Umum',
+      notes: buildSheetNotes(order),
     };
 
     const res = await fetch(url, {
@@ -156,18 +217,11 @@ export async function batchSyncToSheet(orders: Order[]): Promise<{ success: bool
   if (!url) return { success: false };
 
   try {
-    const syncedOrders = orders.map((o) => {
-      const division = o.division?.trim() || 'Bagian Umum';
-      let sheetNotes = o.notes?.trim() || '';
-      if (!sheetNotes.includes('[DIV:')) {
-        sheetNotes = `[DIV:${division}]${sheetNotes ? ` ${sheetNotes}` : ''}`;
-      }
-      return {
-        ...o,
-        division,
-        notes: sheetNotes,
-      };
-    });
+    const syncedOrders = orders.map((o) => ({
+      ...o,
+      division: o.division?.trim() || 'Bagian Umum',
+      notes: buildSheetNotes(o),
+    }));
 
     const res = await fetch(url, {
       method: 'POST',
