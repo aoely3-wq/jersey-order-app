@@ -206,22 +206,36 @@ export async function sendWhatsAppInvoicePDF(order: Order): Promise<{ success: b
   }
 
   try {
-    // Fonnte: kirim dokumen via URL publik — penerima mendapat file PDF di WA
-    // (bukan link, melainkan file attachment yang bisa dibuka langsung)
-    const formData = new URLSearchParams();
+    // Render PDF di server lalu UPLOAD langsung ke Fonnte (multipart `file`).
+    // Tidak bergantung pada Fonnte mengunduh URL (yang tanpa ekstensi .pdf sering
+    // diabaikan sehingga hanya caption teks yang terkirim).
+    const [{ renderToBuffer }, { InvoicePDFDocument }, React] = await Promise.all([
+      import('@react-pdf/renderer'),
+      import('@/lib/invoice-pdf'),
+      import('react'),
+    ]);
+    const pdfBuffer = await renderToBuffer(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      React.createElement(InvoicePDFDocument, { order }) as any
+    );
+    const filename = `Invoice-Jersey-${order.id}.pdf`;
+
+    const formData = new FormData();
     formData.append('target', target);
     formData.append('message', caption);
-    formData.append('url', invoicePdfUrl);
-    formData.append('filename', `Invoice-Jersey-${order.id}.pdf`);
     formData.append('countryCode', '62');
+    formData.append(
+      'file',
+      new Blob([new Uint8Array(pdfBuffer)], { type: 'application/pdf' }),
+      filename
+    );
+    formData.append('filename', filename);
 
+    // Content-Type multipart di-set otomatis oleh fetch (beserta boundary)
     const res = await fetch('https://api.fonnte.com/send', {
       method: 'POST',
-      headers: {
-        Authorization: token,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
+      headers: { Authorization: token },
+      body: formData,
     });
 
     const result = await res.json();
