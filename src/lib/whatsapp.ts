@@ -165,25 +165,16 @@ export async function sendWhatsAppNotification(order: Order): Promise<{ success:
   }
 }
 
-/**
- * Kirim dokumen PDF bukti pembayaran/invoice langsung via WhatsApp (Fonnte).
- *
- * Fonnte mendukung pengiriman file PDF melalui parameter `url` (URL publik PDF)
- * dan `filename` (nama file yang tampil di chat WA penerima).
- * Fonnte akan mendownload PDF dari URL tersebut dan mengirimnya sebagai DOKUMEN
- * (bukan link) ke nomor WA tujuan — penerima cukup tap untuk membuka PDF.
- *
- * Catatan: Fitur ini memerlukan paket Fonnte yang mendukung attachment media
- * (paket Super, Advanced, atau Ultra). Pastikan invoice URL dapat diakses publik.
- */
 // Penjaga anti-dobel: polling status, webhook DOKU, dan tombol cek bisa mendeteksi
 // "LUNAS" hampir bersamaan. Hanya satu pengiriman per order yang boleh jalan.
 // shortcut: in-memory per instance serverless, upgrade ke flag di Google Sheet bila masih dobel lintas instance.
 const waSentOrders = new Set<string>();
 
 /**
- * Notifikasi pembayaran LUNAS ke pemesan: SATU pesan WA berisi PDF invoice sebagai
- * lampiran + caption. Bila unggah PDF gagal, jatuh ke pesan teks (berisi link invoice).
+ * Notifikasi pembayaran LUNAS ke pemesan: SATU pesan WA berisi link PDF invoice.
+ * Paket Fonnte free tidak mendukung lampiran (`file`/`url` diabaikan diam-diam),
+ * jadi PDF dikirim sebagai link langsung ke endpoint application/pdf.
+ * shortcut: link, bukan lampiran; upgrade paket Fonnte Super+ lalu kirim `file` multipart.
  */
 export async function sendWhatsAppInvoicePDF(order: Order): Promise<{ success: boolean; message: string }> {
   if (waSentOrders.has(order.id)) {
@@ -191,90 +182,37 @@ export async function sendWhatsAppInvoicePDF(order: Order): Promise<{ success: b
   }
   waSentOrders.add(order.id);
 
-  const result = await uploadInvoicePDF(order);
-  if (!result.success) {
-    console.warn('[WA] PDF gagal, fallback ke teks:', result.message);
-    const fallback = await sendWhatsAppNotification(order);
-    if (!fallback.success) waSentOrders.delete(order.id); // izinkan retry
-    return fallback;
-  }
-  return result;
-}
-
-async function uploadInvoicePDF(order: Order): Promise<{ success: boolean; message: string }> {
   const token = process.env.FONNTE_TOKEN?.trim() || 'L51Vfvj6BNViqEM3pUV8';
   const target = formatPhoneNumberToWA(order.phone);
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || 'https://jersey-order-app-chi.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://jersey-order-app-chi.vercel.app';
 
-  // URL endpoint yang menghasilkan binary PDF sungguhan (application/pdf)
-  // via @react-pdf/renderer — Fonnte akan mendownload dan mengirimnya sebagai
-  // dokumen PDF asli ke chat WhatsApp penerima.
-  const invoicePdfUrl = `${baseUrl}/api/invoice/${order.id}/pdf`;
-
-  // Caption singkat yang menyertai dokumen PDF
-  const caption =
+  const message =
     `📄 *Bukti Pembayaran Resmi — Invoice PDF*\n` +
     `No. Pesanan: *${order.id}*\n` +
     `Pemesan: *${order.name}* (${order.division || 'Bagian Umum'})\n` +
     `Total: *${formatRupiah(order.totalPrice)}*\n` +
     `Status: ✅ *LUNAS*\n\n` +
-    `Simpan dokumen PDF terlampir sebagai bukti pembayaran resmi Anda. Data pesanan sudah masuk rekap vendor untuk produksi.\n` +
-    `Cek status: ${baseUrl}/status\n\n` +
+    `Unduh PDF bukti pembayaran:\n${baseUrl}/api/invoice/${order.id}/pdf\n\n` +
+    `Cek status pesanan:\n${baseUrl}/status\n\n` +
+    `Data pesanan sudah masuk rekap vendor untuk produksi.\n` +
     `_Aulia NAWASENA • Kanwil DJPb Kepulauan Bangka Belitung_`;
 
-  if (!token) {
-    console.log(`[WhatsApp PDF Mock] Invoice PDF untuk ${target}: ${invoicePdfUrl}`);
-    return {
-      success: true,
-      message: 'Mode simulasi: Invoice PDF dicatat ke log (Siapkan FONNTE_TOKEN untuk kirim asli).',
-    };
-  }
-
   try {
-    // Render PDF di server lalu UPLOAD langsung ke Fonnte (multipart `file`).
-    // Tidak bergantung pada Fonnte mengunduh URL (yang tanpa ekstensi .pdf sering
-    // diabaikan sehingga hanya caption teks yang terkirim).
-    const [{ renderToBuffer }, { InvoicePDFDocument }, React] = await Promise.all([
-      import('@react-pdf/renderer'),
-      import('@/lib/invoice-pdf'),
-      import('react'),
-    ]);
-    const pdfBuffer = await renderToBuffer(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      React.createElement(InvoicePDFDocument, { order }) as any
-    );
-    const filename = `Invoice-Jersey-${order.id}.pdf`;
-
-    const formData = new FormData();
-    formData.append('target', target);
-    formData.append('message', caption);
-    formData.append('countryCode', '62');
-    formData.append(
-      'file',
-      new Blob([new Uint8Array(pdfBuffer)], { type: 'application/pdf' }),
-      filename
-    );
-    formData.append('filename', filename);
-
-    // Content-Type multipart di-set otomatis oleh fetch (beserta boundary)
     const res = await fetch('https://api.fonnte.com/send', {
       method: 'POST',
-      headers: { Authorization: token },
-      body: formData,
+      headers: { Authorization: token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target, message, countryCode: '62' }),
     });
-
     const result = await res.json();
-    console.log('[Fonnte PDF Send Result]:', result);
+    console.log('[Fonnte Send Result]:', result);
+    if (result.status !== true) waSentOrders.delete(order.id); // izinkan retry
     return {
       success: result.status === true,
-      message: result.reason || 'Invoice PDF berhasil dikirim ke WhatsApp pemesan',
+      message: result.reason || 'Link PDF invoice berhasil dikirim ke WhatsApp pemesan',
     };
   } catch (error) {
-    console.error('Gagal mengirim Invoice PDF via WhatsApp:', error);
-    return {
-      success: false,
-      message: 'Gagal mengirim Invoice PDF ke WhatsApp',
-    };
+    waSentOrders.delete(order.id);
+    console.error('Gagal mengirim WhatsApp via Gateway:', error);
+    return { success: false, message: 'Gagal menghubungi server WhatsApp Gateway' };
   }
 }
