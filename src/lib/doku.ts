@@ -20,6 +20,39 @@ export interface DokuCheckoutResponse {
   tokenId?: string;
   expiredDate?: string;
   paymentMethodTypes?: string[];
+  qrCode?: string;
+}
+
+/**
+ * Mengambil string QRIS dinamis resmi dari DOKU yang langsung terikat dengan transaksi checkout.
+ * Memanggil internal DOKU checkout payment endpoint:
+ * POST https://checkout.doku.com/checkout/v1/payment/{token_id}/generate-qris
+ */
+export async function generateDokuQris(tokenId: string): Promise<string | null> {
+  if (!tokenId) return null;
+  try {
+    const url = `https://checkout.doku.com/checkout/v1/payment/${tokenId}/generate-qris`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        token_id: tokenId,
+      },
+      body: JSON.stringify({ token_id: tokenId }),
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      console.warn(`[DOKU generate-qris] HTTP ${res.status} for token ${tokenId}`);
+      return null;
+    }
+
+    const data = await res.json();
+    return data?.qr_code || null;
+  } catch (err) {
+    console.error('[DOKU generate-qris] Error fetching dynamic QR code:', err);
+    return null;
+  }
 }
 
 export async function createDokuCheckout(
@@ -128,11 +161,28 @@ export async function createDokuCheckout(
     throw new Error('DOKU payment URL tidak ditemukan dalam respon API');
   }
 
+  const tokenId = paymentObj?.token_id;
+  let qrCode: string | undefined = undefined;
+
+  // Jika channel QRIS aktif, otomatis ambil string QRIS dinamis resmi terikat invoice
+  if (tokenId && (!paymentMethodTypes || paymentMethodTypes.includes('QRIS'))) {
+    try {
+      const qrisResult = await generateDokuQris(tokenId);
+      if (qrisResult) {
+        qrCode = qrisResult;
+        console.log(`[DOKU] Berhasil mengambil dynamic QRIS terikat invoice ${order.id}`);
+      }
+    } catch (qErr) {
+      console.warn('[DOKU] Gagal mengambil string QRIS dinamis internal:', qErr);
+    }
+  }
+
   return {
     url: paymentUrl,
-    tokenId: paymentObj?.token_id,
+    tokenId,
     expiredDate: paymentObj?.expired_date || paymentObj?.expired_datetime,
     paymentMethodTypes: paymentObj?.payment_method_types,
+    qrCode,
   };
 }
 

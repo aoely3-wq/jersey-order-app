@@ -30,10 +30,10 @@ export function crc16(str: string): string {
 
 /**
  * Mengonversi QRIS Statis DOKU menjadi QRIS Dinamis dengan nominal tagihan otomatis.
- * Saat di-scan menggunakan m-BCA, Livin Mandiri, BRImo, BNI, GoPay, OVO, ShopeePay, DANA, dll.,
- * nominal transfer sudah otomatis terisi dan terkunci sesuai harga pesanan!
+ * Mendukung penyisipan invoiceNumber ke Tag 62 (Additional Data Field) standar ASPI/EMVCo
+ * agar transaksi QRIS otomatis terikat langsung dengan nomor pesanan di DOKU.
  */
-export function generateDynamicQris(amount: number): string {
+export function generateDynamicQris(amount: number, invoiceNumber?: string): string {
   if (!amount || amount <= 0) {
     return DOKU_STATIC_QRIS;
   }
@@ -55,6 +55,18 @@ export function generateDynamicQris(amount: number): string {
   if (currencyIndex !== -1) {
     const insertPosition = currencyIndex + currencyTag.length;
     qris = qris.slice(0, insertPosition) + tag54 + qris.slice(insertPosition);
+  }
+
+  // Jika invoiceNumber disediakan, masukkan ke Tag 62 (Additional Data Field)
+  if (invoiceNumber) {
+    const cleanInvoice = invoiceNumber.trim();
+    // Sub-tag 07: Terminal Label (0703A01)
+    // Sub-tag 50: Bill / Invoice Number (50<length><invoice>)
+    const subTag50 = '50' + cleanInvoice.length.toString().padStart(2, '0') + cleanInvoice;
+    const oldTag62 = '62070703A01';
+    const newTag62Content = '0703A01' + subTag50;
+    const newTag62 = '62' + newTag62Content.length.toString().padStart(2, '0') + newTag62Content;
+    qris = qris.replace(oldTag62, newTag62);
   }
 
   // Hitung ulang checksum CRC16 standar EMVCo

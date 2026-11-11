@@ -58,6 +58,7 @@ export default function QrisPaymentModal({
   const [dokuVaUrl, setDokuVaUrl] = useState<string | null>(null);
   const [isLoadingDoku, setIsLoadingDoku] = useState(false);
   const [dokuError, setDokuError] = useState<string | null>(null);
+  const [dokuQrisString, setDokuQrisString] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'qris' | 'va'>('qris');
   const [qrMode, setQrMode] = useState<'dynamic' | 'poster'>('dynamic');
   const [downloading, setDownloading] = useState(false);
@@ -73,18 +74,17 @@ export default function QrisPaymentModal({
         method: 'POST',
       });
       const data = await res.json();
-      if (data.success && data.isPaid && data.data) {
-        setCurrentOrder(data.data);
-        onPaymentSuccess(data.data);
-      } else if (data.data?.status === 'PAID') {
+      if (data.success && (data.isPaid || data.data?.status === 'PAID')) {
         setCurrentOrder(data.data);
         onPaymentSuccess(data.data);
       } else {
-        setCheckFeedback('prompt_confirm');
+        setCheckFeedback('Menunggu pelunasan di m-Banking. Sistem akan otomatis mengonfirmasi saat pembayaran diterima.');
+        setTimeout(() => setCheckFeedback(null), 5000);
       }
     } catch (err) {
       console.error('Check status error:', err);
-      setCheckFeedback('prompt_confirm');
+      setCheckFeedback('Gagal memeriksa status. Sistem tetap mengecek otomatis di background.');
+      setTimeout(() => setCheckFeedback(null), 5000);
     } finally {
       setIsCheckingStatus(false);
     }
@@ -258,6 +258,9 @@ export default function QrisPaymentModal({
         const url = data.data.payment_url || data.data.redirect_url;
         if (method === 'qris') {
           setDokuUrl(url);
+          if (data.data?.qr_code) {
+            setDokuQrisString(data.data.qr_code);
+          }
         } else {
           setDokuVaUrl(url);
         }
@@ -357,7 +360,8 @@ export default function QrisPaymentModal({
   };
 
   const isPaid = currentOrder.status === 'PAID';
-  const dynamicQrisPayload = generateDynamicQris(currentOrder.totalPrice);
+  const dynamicQrisPayload =
+    dokuQrisString || generateDynamicQris(currentOrder.totalPrice, currentOrder.id);
   const waUserUrl = getWhatsAppDirectLink(currentOrder);
   const waAdminUrl = getAdminWhatsAppConfirmationLink(currentOrder);
 
@@ -464,34 +468,9 @@ export default function QrisPaymentModal({
               </div>
 
               {checkFeedback && (
-                <div className="p-3.5 rounded-2xl bg-amber-50/95 border border-amber-300 text-xs text-amber-950 space-y-2.5 animate-in fade-in duration-200 shadow-xs">
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-extrabold text-amber-900">Transaksi Siap Dikonfirmasi</p>
-                      <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                        Jika Anda telah scan QRIS atau transfer melalui m-Banking / E-Wallet, silakan klik tombol di bawah untuk langsung menerbitkan bukti pembayaran resmi &amp; faktur PDF:
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAdminMarkPaid}
-                    disabled={isSimulating}
-                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {isSimulating ? (
-                      <>
-                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Memverifikasi Pelunasan...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
-                        <span>✓ Konfirmasi Pelunasan &amp; Cetak Faktur PDF &rarr;</span>
-                      </>
-                    )}
-                  </button>
+                <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center gap-2 animate-in fade-in duration-200 shadow-2xs">
+                  <RefreshCw className="w-3.5 h-3.5 text-blue-700 animate-spin shrink-0" />
+                  <span className="font-medium text-[11px] leading-tight">{checkFeedback}</span>
                 </div>
               )}
             </div>
@@ -625,28 +604,17 @@ export default function QrisPaymentModal({
                   Buka aplikasi <b>BCA, Livin Mandiri, BRImo, BNI, BSI, GoPay, OVO, ShopeePay, DANA</b> atau m-Banking lainnya. Scan barcode di atas atau upload hasil unduhan gambar QRIS.
                 </p>
 
-                {/* Tombol Konfirmasi Selesai Bayar */}
-                <div className="w-full mt-4 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={handleAdminMarkPaid}
-                    disabled={isSimulating}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black py-3.5 px-4 rounded-xl shadow-md text-xs sm:text-sm transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50"
-                  >
-                    {isSimulating ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Memverifikasi Pelunasan...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                        <span>Saya Sudah Selesai Bayar &rarr; Terbitkan Faktur &amp; Kirim WA</span>
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[10px] text-slate-400 text-center mt-1.5">
-                    Sistem mendeteksi pelunasan otomatis. Anda juga dapat menekan tombol di atas setelah scan untuk langsung mengunduh bukti faktur resmi.
+                {/* Indikator Status Auto-Konfirmasi Real-time */}
+                <div className="w-full mt-4 pt-3 border-t border-slate-100 flex flex-col items-center justify-center gap-2 text-center">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span>Auto-Konfirmasi Aktif • Real-time DOKU Gateway</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 max-w-sm leading-relaxed">
+                    Setelah pembayaran berhasil di m-Banking Anda, sistem otomatis mengonfirmasi status menjadi <b>Lunas</b> serta bukti faktur PDF resmi langsung terbit dan dikirim ke WhatsApp Anda.
                   </p>
                 </div>
               </div>

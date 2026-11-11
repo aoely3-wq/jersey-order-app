@@ -61,6 +61,7 @@ export async function POST(
         payment_url: dokuData.url,
         token_id: dokuData.tokenId,
         expired_date: dokuData.expiredDate,
+        qr_code: dokuData.qrCode,
       },
     });
   } catch (error: unknown) {
