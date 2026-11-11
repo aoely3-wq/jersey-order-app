@@ -3,10 +3,23 @@ import { Suspense } from 'react';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 
+const title = 'Aulia NAWASENA - Platform Digital Pemesanan Jersey Olahraga';
+const description =
+  'Aulia NAWASENA: Platform digital pemesanan jersey olahraga resmi motif Cual Kanwil DJPb Kepulauan Bangka Belitung dengan pembayaran mandiri via QRIS & Virtual Account Multi-Bank.';
+
 export const metadata: Metadata = {
-  title: 'Aulia NAWASENA - Platform Digital Pemesanan Jersey Olahraga',
-  description:
-    'Aulia NAWASENA: Platform digital pemesanan jersey olahraga resmi motif Cual Kanwil DJPb Kepulauan Bangka Belitung dengan pembayaran mandiri via QRIS & Virtual Account Multi-Bank.',
+  // metadataBase membuat URL gambar OG menjadi absolut (wajib untuk preview WhatsApp)
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://jersey-order-app-chi.vercel.app'),
+  title,
+  description,
+  // Gambar preview saat link dibagikan (WhatsApp, Telegram, dll) — ganti logo "N" default
+  openGraph: {
+    title,
+    description,
+    type: 'website',
+    images: [{ url: '/jersey-maroon.jpg', width: 1024, height: 702, alt: 'Jersey Cual DJPb Babel' }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/jersey-maroon.jpg'] },
 };
 
 export default function RootLayout({
