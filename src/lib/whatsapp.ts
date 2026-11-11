@@ -176,7 +176,32 @@ export async function sendWhatsAppNotification(order: Order): Promise<{ success:
  * Catatan: Fitur ini memerlukan paket Fonnte yang mendukung attachment media
  * (paket Super, Advanced, atau Ultra). Pastikan invoice URL dapat diakses publik.
  */
+// Penjaga anti-dobel: polling status, webhook DOKU, dan tombol cek bisa mendeteksi
+// "LUNAS" hampir bersamaan. Hanya satu pengiriman per order yang boleh jalan.
+// shortcut: in-memory per instance serverless, upgrade ke flag di Google Sheet bila masih dobel lintas instance.
+const waSentOrders = new Set<string>();
+
+/**
+ * Notifikasi pembayaran LUNAS ke pemesan: SATU pesan WA berisi PDF invoice sebagai
+ * lampiran + caption. Bila unggah PDF gagal, jatuh ke pesan teks (berisi link invoice).
+ */
 export async function sendWhatsAppInvoicePDF(order: Order): Promise<{ success: boolean; message: string }> {
+  if (waSentOrders.has(order.id)) {
+    return { success: true, message: 'Notifikasi WA untuk pesanan ini sudah dikirim' };
+  }
+  waSentOrders.add(order.id);
+
+  const result = await uploadInvoicePDF(order);
+  if (!result.success) {
+    console.warn('[WA] PDF gagal, fallback ke teks:', result.message);
+    const fallback = await sendWhatsAppNotification(order);
+    if (!fallback.success) waSentOrders.delete(order.id); // izinkan retry
+    return fallback;
+  }
+  return result;
+}
+
+async function uploadInvoicePDF(order: Order): Promise<{ success: boolean; message: string }> {
   const token = process.env.FONNTE_TOKEN?.trim() || 'L51Vfvj6BNViqEM3pUV8';
   const target = formatPhoneNumberToWA(order.phone);
   const baseUrl =
@@ -194,7 +219,8 @@ export async function sendWhatsAppInvoicePDF(order: Order): Promise<{ success: b
     `Pemesan: *${order.name}* (${order.division || 'Bagian Umum'})\n` +
     `Total: *${formatRupiah(order.totalPrice)}*\n` +
     `Status: ✅ *LUNAS*\n\n` +
-    `Simpan dokumen ini sebagai bukti pembayaran resmi Anda.\n` +
+    `Simpan dokumen PDF terlampir sebagai bukti pembayaran resmi Anda. Data pesanan sudah masuk rekap vendor untuk produksi.\n` +
+    `Cek status: ${baseUrl}/status\n\n` +
     `_Aulia NAWASENA • Kanwil DJPb Kepulauan Bangka Belitung_`;
 
   if (!token) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateOrderStatus, getOrderById, getAllOrders } from '@/lib/orders';
-import { sendWhatsAppNotification, sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
+import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
 
 /**
  * Proses verifikasi dan update status order di background.
@@ -82,9 +82,7 @@ async function processPaymentAsync(notification: Record<string, any>) {
       const updated = await updateOrderStatus(order.id, 'PAID');
       if (updated) {
         try {
-          await sendWhatsAppNotification(updated);
-          console.log(`[Webhook] WA text sent for ${order.id}`);
-          // Kirim juga invoice PDF sebagai dokumen WA terpisah
+          // Satu pesan WA: PDF invoice sebagai lampiran
           await sendWhatsAppInvoicePDF(updated);
           console.log(`[Webhook] WA PDF invoice sent for ${order.id}`);
         } catch (waErr) {
