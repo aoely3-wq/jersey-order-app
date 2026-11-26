@@ -24,12 +24,9 @@ export async function GET(
           const updated = await updateOrderStatus(id, 'PAID');
           if (updated) {
             order = updated;
-            // Satu pesan WA: PDF invoice sebagai lampiran
-            try {
-              await sendWhatsAppInvoicePDF(updated);
-            } catch (waErr) {
-              console.error('[DOKU Active Polling] Gagal mengirim WA:', waErr);
-            }
+            // CATATAN: Pengiriman WA TIDAK dilakukan di GET endpoint karena GET dipanggil
+            // polling setiap 3 detik oleh frontend, yang memicu badai pengiriman berulang.
+            // Pengiriman WA hanya dilakukan oleh Webhook DOKU resmi atau konfirmasi manual (POST/PATCH).
           }
         }
       } catch (checkErr) {
