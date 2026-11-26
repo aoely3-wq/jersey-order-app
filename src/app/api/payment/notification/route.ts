@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateOrderStatus, getOrderById, getAllOrders } from '@/lib/orders';
+import { updateOrderStatus, markOrderPaidOnce, getOrderById, getAllOrders } from '@/lib/orders';
 import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp-server';
 
 /**
@@ -78,11 +78,11 @@ async function processPaymentAsync(notification: Record<string, any>) {
     }
 
     if (isSuccess && order.status !== 'PAID') {
-      console.log(`[Webhook] Marking ${order.id} as PAID`);
-      const updated = await updateOrderStatus(order.id, 'PAID');
-      if (updated) {
+      console.log(`[Webhook] Marking ${order.id} as PAID via atomic claim`);
+      const { order: updated, newlyPaid } = await markOrderPaidOnce(order.id);
+      if (updated && newlyPaid) {
         try {
-          // Satu pesan WA: PDF invoice sebagai lampiran
+          // Satu pesan WA: PDF invoice
           await sendWhatsAppInvoicePDF(updated);
           console.log(`[Webhook] WA PDF invoice sent for ${order.id}`);
         } catch (waErr) {
@@ -116,13 +116,13 @@ export async function POST(req: NextRequest) {
     console.error('[Webhook] Failed to read body:', err);
   }
 
-  // Langsung balas 200 ke DOKU agar tidak timeout
-  // Proses update order di background (non-blocking)
+  // Wajib await di serverless Vercel agar container tidak dibekukan sebelum update Sheet & kirim WA selesai
   if (Object.keys(notification).length > 0) {
-    // Gunakan Promise tanpa await — fire and forget
-    processPaymentAsync(notification).catch((err) =>
-      console.error('[Webhook] Unhandled async error:', err)
-    );
+    try {
+      await processPaymentAsync(notification);
+    } catch (err) {
+      console.error('[Webhook] Unhandled async error:', err);
+    }
   }
 
   return NextResponse.json({

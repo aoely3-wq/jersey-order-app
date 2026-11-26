@@ -182,6 +182,66 @@ export async function createOrder(params: CreateOrderParams): Promise<Order> {
   return newOrder;
 }
 
+// Penjaga in-memory untuk proses klaim PAID di dalam container yang sama
+const markingPaidInFlight = new Set<string>();
+const alreadyMarkedPaid = new Set<string>();
+
+/**
+ * Menandai pesanan sebagai PAID dengan mekanisme Distributed Atomic Claim (Compare-And-Swap)
+ * melalui kolom `paidAt` di Google Sheets.
+ *
+ * Jika 2 atau lebih serverless instance di Vercel mendeteksi pembayaran LUNAS pada detik yang sama,
+ * masing-masing menulis token waktu ISO unik (`claimPaidAt`) ke Google Sheets, lalu membaca ulang
+ * setelah jeda singkat. Hanya SATU instance yang nilai `paidAt`-nya bertahan di Google Sheets
+ * yang akan mendapatkan `newlyPaid: true` dan berhak mengirim pesan WhatsApp.
+ */
+export async function markOrderPaidOnce(
+  id: string
+): Promise<{ order: Order | null; newlyPaid: boolean }> {
+  if (alreadyMarkedPaid.has(id) || markingPaidInFlight.has(id)) {
+    const existing = await getOrderById(id);
+    return { order: existing, newlyPaid: false };
+  }
+
+  markingPaidInFlight.add(id);
+  try {
+    // Buat timestamp ISO-8601 unik dengan jitter milidetik (001-999) agar tidak pernah kembar antar instance
+    const now = new Date();
+    const randomMs = Math.floor(Math.random() * 999) + 1;
+    const uniqueMs = String((now.getMilliseconds() + randomMs) % 1000 || 1).padStart(3, '0');
+    const claimPaidAt = now.toISOString().replace(/\.\d{3}Z$/, `.${uniqueMs}Z`);
+
+    if (isGoogleSheetConfigured()) {
+      await updateOrderStatusInSheet(id, 'PAID', claimPaidAt);
+
+      // Tunggu 1.2 detik agar jika ada request paralel dari instance lain yang lolos di saat bersamaan,
+      // penulisan ke Google Sheet selesai dan hanya menyisakan satu pemenang terakhir.
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      const all = await getAllOrders();
+      const sheetOrder = all.find((o) => o.id === id) || null;
+
+      alreadyMarkedPaid.add(id);
+
+      if (sheetOrder && sheetOrder.paidAt && sheetOrder.paidAt !== claimPaidAt) {
+        console.log(
+          `[Orders Distributed Lock]: Order ${id} sudah diklaim oleh instance lain (sheet=${sheetOrder.paidAt} vs claim=${claimPaidAt}). Skip pengiriman WA ganda.`
+        );
+        return { order: sheetOrder, newlyPaid: false };
+      }
+
+      return { order: sheetOrder, newlyPaid: true };
+    }
+
+    // Fallback lokal bila Google Sheet tidak dikonfigurasi
+    const updated = await updateOrderStatus(id, 'PAID');
+    alreadyMarkedPaid.add(id);
+    return { order: updated, newlyPaid: true };
+  } finally {
+    markingPaidInFlight.delete(id);
+  }
+}
+
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order | null> {
   const paidAt = status === 'PAID' ? new Date().toISOString() : undefined;
 

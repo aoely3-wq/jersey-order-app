@@ -64,9 +64,12 @@ export default function QrisPaymentModal({
   const [downloading, setDownloading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [checkFeedback, setCheckFeedback] = useState<string | null>(null);
+  const isPollingInFlightRef = React.useRef(false);
+  const hasConfirmedPaidRef = React.useRef(order.status === 'PAID');
 
   const checkPaymentStatusNow = async () => {
-    if (currentOrder.status === 'PAID') return;
+    if (currentOrder.status === 'PAID' || hasConfirmedPaidRef.current || isPollingInFlightRef.current) return;
+    isPollingInFlightRef.current = true;
     setIsCheckingStatus(true);
     setCheckFeedback(null);
     try {
@@ -75,6 +78,7 @@ export default function QrisPaymentModal({
       });
       const data = await res.json();
       if (data.success && (data.isPaid || data.data?.status === 'PAID')) {
+        hasConfirmedPaidRef.current = true;
         setCurrentOrder(data.data);
         onPaymentSuccess(data.data);
       } else {
@@ -86,6 +90,7 @@ export default function QrisPaymentModal({
       setCheckFeedback('Gagal memeriksa status. Sistem tetap mengecek otomatis di background.');
       setTimeout(() => setCheckFeedback(null), 5000);
     } finally {
+      isPollingInFlightRef.current = false;
       setIsCheckingStatus(false);
     }
   };
@@ -240,6 +245,7 @@ export default function QrisPaymentModal({
 
   useEffect(() => {
     setCurrentOrder(order);
+    hasConfirmedPaidRef.current = order.status === 'PAID';
   }, [order]);
 
   // Muat URL pembayaran DOKU Checkout (langsung membuka QRIS dinamis secara default)
@@ -290,20 +296,26 @@ export default function QrisPaymentModal({
     }
   };
 
-  // Polling otomatis setiap 3 detik untuk update status real-time saat dibayar oleh pembeli
+  // Polling otomatis setiap 3 detik (serialized: tidak pernah tumpang-tindih request)
   useEffect(() => {
-    if (!isOpen || currentOrder.status === 'PAID') return;
+    if (!isOpen || currentOrder.status === 'PAID' || hasConfirmedPaidRef.current) return;
 
     const interval = setInterval(async () => {
+      if (isPollingInFlightRef.current || hasConfirmedPaidRef.current) return;
+      isPollingInFlightRef.current = true;
       try {
         const res = await fetch(`/api/orders/${currentOrder.id}`);
         const data = await res.json();
         if (data.success && data.data?.status === 'PAID') {
+          hasConfirmedPaidRef.current = true;
+          clearInterval(interval);
           setCurrentOrder(data.data);
           onPaymentSuccess(data.data);
         }
       } catch {
         // silent catch
+      } finally {
+        isPollingInFlightRef.current = false;
       }
     }, 3000);
 

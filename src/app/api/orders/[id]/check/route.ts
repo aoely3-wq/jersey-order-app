@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrderById, updateOrderStatus } from '@/lib/orders';
+import { getOrderById, markOrderPaidOnce } from '@/lib/orders';
 import { checkDokuOrderStatus, isDokuConfigured } from '@/lib/doku';
 import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp-server';
 
@@ -39,13 +39,15 @@ export async function POST(
     const dokuResult = await checkDokuOrderStatus(id);
 
     if (dokuResult.isPaid) {
-      const updated = await updateOrderStatus(id, 'PAID');
+      const { order: updated, newlyPaid } = await markOrderPaidOnce(id);
       if (updated) {
         order = updated;
-        try {
-          await sendWhatsAppInvoicePDF(updated);
-        } catch (waErr) {
-          console.error('[Check DOKU Route] Failed to send WA:', waErr);
+        if (newlyPaid) {
+          try {
+            await sendWhatsAppInvoicePDF(updated);
+          } catch (waErr) {
+            console.error('[Check DOKU Route] Failed to send WA:', waErr);
+          }
         }
       }
 

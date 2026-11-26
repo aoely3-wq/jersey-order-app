@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrderById, updateOrderStatus, deleteOrder } from '@/lib/orders';
+import { getOrderById, updateOrderStatus, markOrderPaidOnce, deleteOrder } from '@/lib/orders';
 import { OrderStatus } from '@/lib/types';
 import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp-server';
 import { checkDokuOrderStatus, isDokuConfigured } from '@/lib/doku';
@@ -20,13 +20,17 @@ export async function GET(
       try {
         const dokuCheck = await checkDokuOrderStatus(id);
         if (dokuCheck.isPaid) {
-          console.log(`[DOKU Active Polling]: Invoice ${id} terverifikasi LUNAS di DOKU! Memperbarui status...`);
-          const updated = await updateOrderStatus(id, 'PAID');
+          console.log(`[DOKU Active Polling]: Invoice ${id} terverifikasi LUNAS di DOKU! Mengklaim status PAID...`);
+          const { order: updated, newlyPaid } = await markOrderPaidOnce(id);
           if (updated) {
             order = updated;
-            // CATATAN: Pengiriman WA TIDAK dilakukan di GET endpoint karena GET dipanggil
-            // polling setiap 3 detik oleh frontend, yang memicu badai pengiriman berulang.
-            // Pengiriman WA hanya dilakukan oleh Webhook DOKU resmi atau konfirmasi manual (POST/PATCH).
+            if (newlyPaid) {
+              try {
+                await sendWhatsAppInvoicePDF(updated);
+              } catch (waErr) {
+                console.error('[DOKU Active Polling] Gagal mengirim WA:', waErr);
+              }
+            }
           }
         }
       } catch (checkErr) {
