@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateOrderStatus, getOrderById } from '@/lib/orders';
-import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
+import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp-server';
 
 export async function POST(
   _req: NextRequest,

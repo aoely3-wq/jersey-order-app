@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateOrderStatus, getOrderById, getAllOrders } from '@/lib/orders';
-import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
+import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp-server';
 
 /**
  * Proses verifikasi dan update status order di background.

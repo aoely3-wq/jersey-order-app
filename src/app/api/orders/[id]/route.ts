@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById, updateOrderStatus, deleteOrder } from '@/lib/orders';
 import { OrderStatus } from '@/lib/types';
-import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp';
+import { sendWhatsAppInvoicePDF } from '@/lib/whatsapp-server';
 import { checkDokuOrderStatus, isDokuConfigured } from '@/lib/doku';
 
 export async function GET(
